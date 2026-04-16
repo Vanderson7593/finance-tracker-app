@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, FlatList, Pressable, Modal, Platform } from 'react-native';
+import { View, StyleSheet, FlatList, Pressable, Modal, Platform, Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { BudgetProgressBar } from '../../src/components/budget-progress-bar';
 import { BudgetForm } from '../../src/features/budgets/budget-form';
 import { BudgetCopyModal } from '../../src/features/budgets/budget-copy-modal';
@@ -35,13 +41,32 @@ export default function BudgetsScreen() {
     (b) => b.year < year || (b.year === year && b.month < month),
   );
 
+  const now = new Date();
+  const isAtCurrentMonth =
+    year === now.getFullYear() && month === now.getMonth() + 1;
+
   const goToPrevMonth = () => {
     if (month === 1) { setMonth(12); setYear((y) => y - 1); }
     else setMonth((m) => m - 1);
   };
   const goToNextMonth = () => {
+    if (isAtCurrentMonth) return;
     if (month === 12) { setMonth(1); setYear((y) => y + 1); }
     else setMonth((m) => m + 1);
+  };
+
+  const SCREEN_WIDTH = Dimensions.get('window').width;
+  const translateX = useSharedValue(0);
+
+  const animateSwap = (direction: 1 | -1) => {
+    'worklet';
+    translateX.value = withTiming(direction * -SCREEN_WIDTH, { duration: 180 }, (finished) => {
+      if (!finished) return;
+      if (direction === 1) runOnJS(goToNextMonth)();
+      else runOnJS(goToPrevMonth)();
+      translateX.value = direction * SCREEN_WIDTH;
+      translateX.value = withTiming(0, { duration: 220 });
+    });
   };
 
   const handleAddBudget = async (data: Omit<Budget, 'id' | 'createdAt'>) => {
@@ -64,10 +89,24 @@ export default function BudgetsScreen() {
   const swipe = Gesture.Pan()
     .activeOffsetX([-20, 20])
     .failOffsetY([-16, 16])
+    .onUpdate((e) => {
+      const resist = e.translationX < 0 && isAtCurrentMonth ? 0.25 : 1;
+      translateX.value = e.translationX * resist;
+    })
     .onEnd((e) => {
-      if (e.translationX < -60) runOnJS(goToNextMonth)();
-      else if (e.translationX > 60) runOnJS(goToPrevMonth)();
+      const threshold = SCREEN_WIDTH * 0.22;
+      if (e.translationX < -threshold && !isAtCurrentMonth) {
+        animateSwap(1);
+      } else if (e.translationX > threshold) {
+        animateSwap(-1);
+      } else {
+        translateX.value = withSpring(0, { damping: 20, stiffness: 180 });
+      }
     });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
 
   return (
     <View style={[styles.container, { paddingTop: topPad }]}>
@@ -89,7 +128,7 @@ export default function BudgetsScreen() {
       <View style={{ height: 8 }} />
 
       <GestureDetector gesture={swipe}>
-        <View style={styles.listWrapper}>
+        <Animated.View style={[styles.listWrapper, animatedStyle]}>
           <FlatList
             data={budgetProgress}
             keyExtractor={(item) => item.budget.id}
@@ -116,7 +155,7 @@ export default function BudgetsScreen() {
               />
             )}
           />
-        </View>
+        </Animated.View>
       </GestureDetector>
 
       <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet">
