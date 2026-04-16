@@ -8,7 +8,10 @@ import { InsightCard } from '../../src/components/insight-card';
 import { CategoryIcon } from '../../src/components/category-icon';
 import { Card } from '../../src/components/card';
 import { COLORS } from '../../constants/colors';
+import { HIDDEN_AMOUNT, useAmountVisibility } from '../../src/hooks/use-amount-visibility';
 import { useCategorySpending, useMonthSummary, useMonthlyTrend } from '../../src/hooks/use-finance-data';
+import { useCategoryStore } from '../../src/store/use-category-store';
+import { getCategoryDisplayName } from '../../src/lib/categories';
 import { formatCurrency, formatShortMonth, getCurrentMonth } from '../../src/lib/formatters';
 
 const screenWidth = Dimensions.get('window').width;
@@ -35,6 +38,8 @@ export default function ReportsScreen() {
   const summary = useMonthSummary(month, year);
   const categorySpending = useCategorySpending(month, year);
   const monthlyTrend = useMonthlyTrend(6);
+  const categories = useCategoryStore((state) => state.categories);
+  const { showAmounts } = useAmountVisibility();
 
   const goToPrevMonth = () => {
     if (month === 1) { setMonth(12); setYear((y) => y - 1); }
@@ -67,7 +72,7 @@ export default function ReportsScreen() {
   };
 
   const pieData = categorySpending.slice(0, 6).map((cs) => ({
-    name: cs.category.name,
+    name: getCategoryDisplayName(cs.category, categories),
     population: cs.total,
     color: cs.category.color,
     legendFontColor: COLORS.text.secondary,
@@ -91,8 +96,8 @@ export default function ReportsScreen() {
             icon="trending-down"
             iconColor={COLORS.expense}
             title="Maior gasto"
-            value={topCategory ? topCategory.category.name : 'N/A'}
-            subtitle={topCategory ? formatCurrency(topCategory.total) : undefined}
+            value={topCategory ? getCategoryDisplayName(topCategory.category, categories) : 'N/A'}
+            subtitle={topCategory ? (showAmounts ? formatCurrency(topCategory.total) : HIDDEN_AMOUNT) : undefined}
           />
           <View style={{ width: 12 }} />
           <InsightCard
@@ -110,7 +115,7 @@ export default function ReportsScreen() {
             icon="bar-chart-2"
             iconColor={COLORS.warning}
             title="Média de despesas"
-            value={formatCurrency(avgExpenses)}
+            value={showAmounts ? formatCurrency(avgExpenses) : HIDDEN_AMOUNT}
             subtitle="últimos 6 meses"
           />
           <View style={{ width: 12 }} />
@@ -141,6 +146,7 @@ export default function ReportsScreen() {
                 width={chartWidth - 24}
                 height={180}
                 chartConfig={CHART_CONFIG}
+                formatYLabel={(label) => (showAmounts ? label : '••')}
                 bezier
                 style={{ borderRadius: 12 }}
                 withInnerLines={false}
@@ -177,14 +183,14 @@ export default function ReportsScreen() {
                 <View key={cs.categoryId} style={styles.categoryRow}>
                   <CategoryIcon icon={cs.category.icon} color={cs.category.color} size={36} />
                   <View style={styles.categoryInfo}>
-                    <ThemedText variant="body">{cs.category.name}</ThemedText>
+                    <ThemedText variant="body">{getCategoryDisplayName(cs.category, categories)}</ThemedText>
                     <View style={styles.barBg}>
                       <View style={[styles.barFill, { width: `${cs.percentage}%` as any, backgroundColor: cs.category.color }]} />
                     </View>
                   </View>
                   <View style={styles.categoryAmounts}>
                     <ThemedText variant="body" style={{ fontWeight: '600' as const }}>
-                      {formatCurrency(cs.total)}
+                      {showAmounts ? formatCurrency(cs.total) : HIDDEN_AMOUNT}
                     </ThemedText>
                     <ThemedText variant="caption">{cs.percentage.toFixed(1)}%</ThemedText>
                   </View>

@@ -124,6 +124,7 @@ export default function HomeScreen() {
                   key={tx.id}
                   transaction={tx}
                   category={categories.find((c) => c.id === tx.categoryId)}
+                  allCategories={categories}
                   onPress={() => router.push({ pathname: '/transaction-form', params: { id: tx.id } })}
                 />
               ))

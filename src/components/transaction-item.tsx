@@ -6,18 +6,23 @@ import { CategoryIcon } from './category-icon';
 import { COLORS } from '../../constants/colors';
 import { Transaction, Category } from '../types';
 import { formatCurrency, formatDate } from '../lib/formatters';
+import { HIDDEN_AMOUNT, useAmountVisibility } from '../hooks/use-amount-visibility';
+import { getCategoryDisplayName } from '../lib/categories';
 
 interface TransactionItemProps {
   transaction: Transaction;
   category: Category | undefined;
+  allCategories: Category[];
   onPress?: () => void;
   onDelete?: () => void;
 }
 
-export function TransactionItem({ transaction, category, onPress, onDelete }: TransactionItemProps) {
+export function TransactionItem({ transaction, category, allCategories, onPress, onDelete }: TransactionItemProps) {
   const isIncome = transaction.type === 'income';
   const amountColor = isIncome ? COLORS.income : COLORS.expense;
   const prefix = isIncome ? '+' : '-';
+  const { showAmounts } = useAmountVisibility();
+  const title = transaction.title?.trim() || category?.name || 'Sem título';
 
   return (
     <Pressable
@@ -31,10 +36,10 @@ export function TransactionItem({ transaction, category, onPress, onDelete }: Tr
       />
       <View style={styles.content}>
         <ThemedText variant="subtitle" numberOfLines={1} style={styles.title}>
-          {transaction.title}
+          {title}
         </ThemedText>
         <View style={styles.metaRow}>
-          <ThemedText variant="caption">{category?.name ?? 'Sem categoria'}</ThemedText>
+          <ThemedText variant="caption">{getCategoryDisplayName(category, allCategories)}</ThemedText>
           {transaction.recurrence !== 'none' && (
             <View style={styles.recurringBadge}>
               <Feather name="repeat" size={10} color={COLORS.primary} />
@@ -46,7 +51,7 @@ export function TransactionItem({ transaction, category, onPress, onDelete }: Tr
         </View>
       </View>
       <ThemedText style={{ fontSize: 16, fontWeight: '600' as const, color: amountColor }}>
-        {prefix}{formatCurrency(transaction.amount)}
+        {showAmounts ? `${prefix}${formatCurrency(transaction.amount)}` : `${prefix}${HIDDEN_AMOUNT}`}
       </ThemedText>
     </Pressable>
   );

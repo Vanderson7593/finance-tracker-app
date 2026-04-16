@@ -1,12 +1,123 @@
-import { BlurView } from 'expo-blur';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/colors';
+
+type TabConfig = {
+  name: string;
+  label: string;
+  icon: keyof typeof Feather.glyphMap;
+  sfSymbol: { default: string; selected: string };
+};
+
+const TAB_CONFIG: TabConfig[] = [
+  { name: 'index', label: 'Início', icon: 'home', sfSymbol: { default: 'house', selected: 'house.fill' } },
+  { name: 'transactions', label: 'Transações', icon: 'list', sfSymbol: { default: 'list.bullet', selected: 'list.bullet' } },
+  { name: 'reports', label: 'Relatórios', icon: 'bar-chart-2', sfSymbol: { default: 'chart.bar', selected: 'chart.bar.fill' } },
+  { name: 'budgets', label: 'Orçamento', icon: 'target', sfSymbol: { default: 'target', selected: 'target' } },
+  { name: 'settings', label: 'Definições', icon: 'settings', sfSymbol: { default: 'gearshape', selected: 'gearshape.fill' } },
+];
+
+function CustomTabBar({ state, navigation }: any) {
+  const insets = useSafeAreaInsets();
+  const isIOS = Platform.OS === 'ios';
+
+  return (
+    <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      <View style={styles.container}>
+        {state.routes.map((route: any, index: number) => {
+          const isFocused = state.index === index;
+          const tab = TAB_CONFIG.find((t) => t.name === route.name);
+          if (!tab) return null;
+
+          return (
+            <TouchableOpacity
+              key={route.key}
+              onPress={() => {
+                if (!isFocused) navigation.navigate(route.name);
+              }}
+              style={styles.tab}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.iconWrap, isFocused && styles.iconWrapActive]}>
+                {isIOS ? (
+                  <SymbolView
+                    name={isFocused ? tab.sfSymbol.selected : tab.sfSymbol.default}
+                    tintColor={isFocused ? COLORS.surface : COLORS.text.tertiary}
+                    size={20}
+                  />
+                ) : (
+                  <Feather
+                    name={tab.icon}
+                    size={20}
+                    color={isFocused ? COLORS.surface : COLORS.text.tertiary}
+                  />
+                )}
+              </View>
+              <Text style={[styles.label, isFocused && styles.labelActive]}>{tab.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  container: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    borderRadius: 28,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+  },
+  iconWrap: {
+    width: 42,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapActive: {
+    backgroundColor: COLORS.primary,
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: COLORS.text.tertiary,
+    letterSpacing: 0.2,
+  },
+  labelActive: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+});
 
 function NativeTabLayout() {
   return (
@@ -36,72 +147,16 @@ function NativeTabLayout() {
 }
 
 function ClassicTabLayout() {
-  const isIOS = Platform.OS === 'ios';
-  const isWeb = Platform.OS === 'web';
-
   return (
     <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.text.tertiary,
-        headerShown: false,
-        tabBarStyle: {
-          position: 'absolute',
-          backgroundColor: isIOS ? 'transparent' : COLORS.surface,
-          borderTopWidth: 1,
-          borderTopColor: COLORS.border,
-          elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
-        },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '500' as const },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />
-          ) : (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.surface }]} />
-          ),
-      }}
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <CustomTabBar {...props} />}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Início',
-          tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="house" tintColor={color} size={24} /> : <Feather name="home" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="transactions"
-        options={{
-          title: 'Transações',
-          tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="list.bullet" tintColor={color} size={24} /> : <Feather name="list" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="reports"
-        options={{
-          title: 'Relatórios',
-          tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="chart.bar" tintColor={color} size={24} /> : <Feather name="bar-chart-2" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="budgets"
-        options={{
-          title: 'Orçamento',
-          tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="target" tintColor={color} size={24} /> : <Feather name="target" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Definições',
-          tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="gearshape" tintColor={color} size={24} /> : <Feather name="settings" size={22} color={color} />,
-        }}
-      />
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="transactions" />
+      <Tabs.Screen name="reports" />
+      <Tabs.Screen name="budgets" />
+      <Tabs.Screen name="settings" />
     </Tabs>
   );
 }

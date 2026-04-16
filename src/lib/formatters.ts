@@ -1,14 +1,9 @@
 import { format, formatDistanceToNow, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY } from '../constants';
 
-export function formatCurrency(amount: number, currency = 'EUR'): string {
-  const symbols: Record<string, string> = {
-    EUR: '€',
-    USD: '$',
-    GBP: '£',
-    BRL: 'R$',
-  };
-  const symbol = symbols[currency] ?? currency;
+export function formatCurrency(amount: number, currency = DEFAULT_CURRENCY): string {
+  const symbol = CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] ?? currency;
   const formatted = Math.abs(amount).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   return `${symbol} ${formatted}`;
 }

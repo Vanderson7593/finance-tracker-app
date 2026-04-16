@@ -42,7 +42,14 @@ export function useCategorySpending(month: number, year: number): CategorySpendi
         const count = expenseTxs.filter((t) => t.categoryId === categoryId).length;
         return {
           categoryId,
-          category: category ?? { id: categoryId, name: 'Desconhecido', icon: 'tag', color: '#ccc', type: 'expense' as const },
+          category: category ?? {
+            id: categoryId,
+            name: 'Desconhecido',
+            icon: 'tag',
+            color: '#ccc',
+            type: 'expense' as const,
+            kind: 'subcategory' as const,
+          },
           total,
           percentage: totalExpenses > 0 ? (total / totalExpenses) * 100 : 0,
           count,
@@ -65,6 +72,7 @@ export function useBudgetProgress(month: number, year: number): BudgetProgress[]
         icon: 'tag',
         color: '#ccc',
         type: 'expense' as const,
+        kind: 'subcategory' as const,
       };
       const spent = txs
         .filter((t) => t.type === 'expense' && t.categoryId === budget.categoryId)

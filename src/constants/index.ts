@@ -6,14 +6,24 @@ export const STORAGE_KEYS = {
   PROFILE: '@fintrack_profile',
 } as const;
 
+export const CURRENCY_SYMBOLS = {
+  AOA: 'Kz',
+  EUR: '€',
+  USD: '$',
+  GBP: '£',
+  BRL: 'R$',
+} as const;
+
 export const CURRENCIES = [
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'USD', symbol: '$', name: 'US Dollar' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
+  { code: 'AOA', symbol: CURRENCY_SYMBOLS.AOA, name: 'Kwanza Angolano' },
+  { code: 'EUR', symbol: CURRENCY_SYMBOLS.EUR, name: 'Euro' },
+  { code: 'USD', symbol: CURRENCY_SYMBOLS.USD, name: 'US Dollar' },
+  { code: 'GBP', symbol: CURRENCY_SYMBOLS.GBP, name: 'British Pound' },
+  { code: 'BRL', symbol: CURRENCY_SYMBOLS.BRL, name: 'Brazilian Real' },
 ];
 
-export const DEFAULT_CURRENCY = 'EUR';
+export const DEFAULT_CURRENCY = 'AOA';
+export const DEFAULT_CURRENCY_SYMBOL = CURRENCY_SYMBOLS[DEFAULT_CURRENCY];
 
 export const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',

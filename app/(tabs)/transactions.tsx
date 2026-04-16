@@ -19,6 +19,7 @@ import { COLORS } from '../../constants/colors';
 import { useTransactionStore } from '../../src/store/use-transaction-store';
 import { useCategoryStore } from '../../src/store/use-category-store';
 import { getCurrentMonth } from '../../src/lib/formatters';
+import { getCategoryDisplayName, isSubcategory } from '../../src/lib/categories';
 import * as Haptics from 'expo-haptics';
 
 const TYPE_FILTERS = [
@@ -55,7 +56,11 @@ export default function TransactionsScreen() {
   const categoryOptions = useMemo(() => {
     const used = new Set(filtered.map((t) => t.categoryId));
     const opts = [{ label: 'Todas', value: 'all' }];
-    categories.filter((c) => used.has(c.id)).forEach((c) => opts.push({ label: c.name, value: c.id }));
+    categories
+      .filter((category) => used.has(category.id) && isSubcategory(category))
+      .forEach((category) =>
+        opts.push({ label: getCategoryDisplayName(category, categories), value: category.id }),
+      );
     return opts;
   }, [filtered, categories]);
 
@@ -110,6 +115,7 @@ export default function TransactionsScreen() {
           <TransactionItem
             transaction={item}
             category={categories.find((c) => c.id === item.categoryId)}
+            allCategories={categories}
             onPress={() => router.push({ pathname: '/transaction-form', params: { id: item.id } })}
             onDelete={() => handleDelete(item.id)}
           />

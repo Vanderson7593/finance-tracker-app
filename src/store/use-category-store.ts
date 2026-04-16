@@ -3,6 +3,7 @@ import { Category } from '../types';
 import { getItem, setItem } from '../lib/storage';
 import { STORAGE_KEYS } from '../constants';
 import { DEFAULT_CATEGORIES } from '../lib/seed';
+import { normalizeCategories } from '../lib/categories';
 
 interface CategoryStore {
   categories: Category[];
@@ -21,7 +22,9 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
   loadCategories: async () => {
     const stored = await getItem<Category[]>(STORAGE_KEYS.CATEGORIES);
     if (stored && stored.length > 0) {
-      set({ categories: stored, initialized: true });
+      const normalized = normalizeCategories(stored);
+      set({ categories: normalized, initialized: true });
+      await setItem(STORAGE_KEYS.CATEGORIES, normalized);
     } else {
       await setItem(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
       set({ categories: DEFAULT_CATEGORIES, initialized: true });

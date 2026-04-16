@@ -2,18 +2,22 @@ export type TransactionType = 'income' | 'expense';
 
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
+export type CategoryKind = 'category' | 'subcategory';
+
 export interface Category {
   id: string;
   name: string;
   icon: string;
   color: string;
   type: TransactionType;
+  kind: CategoryKind;
+  parentCategoryId?: string;
   isDefault?: boolean;
 }
 
 export interface Transaction {
   id: string;
-  title: string;
+  title?: string;
   amount: number;
   type: TransactionType;
   categoryId: string;
@@ -38,6 +42,7 @@ export interface NotificationSettings {
   budgetAlerts: boolean;
   budgetAlertThreshold: number; // percentage 0-100
   weeklyReport: boolean;
+  showAmounts: boolean;
 }
 
 export interface UserProfile {

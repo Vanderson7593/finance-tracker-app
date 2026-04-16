@@ -8,6 +8,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { ThemedText } from '../src/components/themed-text';
 import { Card } from '../src/components/card';
 import { COLORS } from '../constants/colors';
+import { HIDDEN_AMOUNT, useAmountVisibility } from '../src/hooks/use-amount-visibility';
 import { useForecast, useMonthlyTrend, useMonthSummary } from '../src/hooks/use-finance-data';
 import { formatCurrency, formatShortMonth, getCurrentMonth } from '../src/lib/formatters';
 
@@ -32,6 +33,7 @@ export default function ForecastScreen() {
   const forecast = useForecast(month, year);
   const trend = useMonthlyTrend(4);
   const summary = useMonthSummary(month, year);
+  const { showAmounts } = useAmountVisibility();
 
   const projectedMonths = [...trend, {
     month: month + 1 > 12 ? 1 : month + 1,
@@ -67,7 +69,9 @@ export default function ForecastScreen() {
             <View style={{ flex: 1, marginLeft: 16 }}>
               <ThemedText variant="caption">Saldo previsto no fim do mês</ThemedText>
               <ThemedText style={{ fontSize: 28, fontWeight: '700' as const, color: isGood ? COLORS.income : COLORS.expense }}>
-                {forecast.projectedBalance >= 0 ? '' : '-'}{formatCurrency(Math.abs(forecast.projectedBalance))}
+                {showAmounts
+                  ? `${forecast.projectedBalance >= 0 ? '' : '-'}${formatCurrency(Math.abs(forecast.projectedBalance))}`
+                  : HIDDEN_AMOUNT}
               </ThemedText>
             </View>
           </View>
@@ -86,14 +90,14 @@ export default function ForecastScreen() {
             <Feather name="arrow-down-circle" size={20} color={COLORS.income} />
             <ThemedText variant="caption" style={{ marginTop: 8 }}>Receitas previstas</ThemedText>
             <ThemedText style={{ fontSize: 16, fontWeight: '700' as const, color: COLORS.income }}>
-              {formatCurrency(forecast.projectedIncome)}
+              {showAmounts ? formatCurrency(forecast.projectedIncome) : HIDDEN_AMOUNT}
             </ThemedText>
           </Card>
           <Card style={styles.statCard} padding={16}>
             <Feather name="arrow-up-circle" size={20} color={COLORS.expense} />
             <ThemedText variant="caption" style={{ marginTop: 8 }}>Despesas previstas</ThemedText>
             <ThemedText style={{ fontSize: 16, fontWeight: '700' as const, color: COLORS.expense }}>
-              {formatCurrency(forecast.projectedExpenses)}
+              {showAmounts ? formatCurrency(forecast.projectedExpenses) : HIDDEN_AMOUNT}
             </ThemedText>
           </Card>
         </View>
@@ -103,11 +107,15 @@ export default function ForecastScreen() {
           <ThemedText variant="subtitle" style={{ marginBottom: 12 }}>Estado atual</ThemedText>
           <View style={styles.progressRow}>
             <ThemedText variant="body">Receitas registadas</ThemedText>
-            <ThemedText style={{ fontWeight: '600' as const, color: COLORS.income }}>{formatCurrency(summary.totalIncome)}</ThemedText>
+            <ThemedText style={{ fontWeight: '600' as const, color: COLORS.income }}>
+              {showAmounts ? formatCurrency(summary.totalIncome) : HIDDEN_AMOUNT}
+            </ThemedText>
           </View>
           <View style={styles.progressRow}>
             <ThemedText variant="body">Despesas registadas</ThemedText>
-            <ThemedText style={{ fontWeight: '600' as const, color: COLORS.expense }}>{formatCurrency(summary.totalExpenses)}</ThemedText>
+            <ThemedText style={{ fontWeight: '600' as const, color: COLORS.expense }}>
+              {showAmounts ? formatCurrency(summary.totalExpenses) : HIDDEN_AMOUNT}
+            </ThemedText>
           </View>
           <View style={styles.progressRow}>
             <ThemedText variant="body">Dias restantes</ThemedText>
@@ -116,7 +124,7 @@ export default function ForecastScreen() {
           <View style={[styles.progressRow, { borderBottomWidth: 0 }]}>
             <ThemedText variant="body">Saldo atual</ThemedText>
             <ThemedText style={{ fontWeight: '700' as const, color: summary.balance >= 0 ? COLORS.income : COLORS.expense }}>
-              {formatCurrency(Math.abs(summary.balance))}
+              {showAmounts ? formatCurrency(Math.abs(summary.balance)) : HIDDEN_AMOUNT}
             </ThemedText>
           </View>
         </Card>
@@ -139,6 +147,7 @@ export default function ForecastScreen() {
               width={chartWidth - 24}
               height={160}
               chartConfig={CHART_CONFIG}
+              formatYLabel={(label) => (showAmounts ? label : '••')}
               bezier
               style={{ borderRadius: 12 }}
               withInnerLines={false}

@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   Pressable,
   Modal,
-  FlatList,
   Alert,
   Platform,
 } from 'react-native';
@@ -20,13 +19,13 @@ import { SegmentedControl } from '../../components/segmented-control';
 import { CategoryIcon } from '../../components/category-icon';
 import { ThemedText } from '../../components/themed-text';
 import { COLORS } from '../../../constants/colors';
-import { Transaction, TransactionType, RecurrenceType, Category } from '../../types';
+import { Transaction, TransactionType, RecurrenceType } from '../../types';
 import { useCategoryStore } from '../../store/use-category-store';
-import { formatDate } from '../../lib/formatters';
-import { RECURRENCE_LABELS } from '../../constants';
+import { getCategoryDisplayName, getParentCategory, groupCategoriesByParent } from '../../lib/categories';
+import { DEFAULT_CURRENCY_SYMBOL, RECURRENCE_LABELS } from '../../constants';
 
 const schema = z.object({
-  title: z.string().min(1, 'Título obrigatório'),
+  title: z.string().max(80, 'Máximo de 80 caracteres').optional(),
   amount: z.string().min(1, 'Valor obrigatório').refine((v) => !isNaN(parseFloat(v)) && parseFloat(v) > 0, 'Valor inválido'),
   description: z.string().optional(),
 });
@@ -52,12 +51,17 @@ export function TransactionForm({ initialData, onSubmit, onCancel }: Transaction
   const [type, setType] = useState<TransactionType>(initialData?.type ?? 'expense');
   const [categoryId, setCategoryId] = useState<string>(initialData?.categoryId ?? '');
   const [recurrence, setRecurrence] = useState<RecurrenceType>(initialData?.recurrence ?? 'none');
-  const [date, setDate] = useState<string>(initialData?.date ?? new Date().toISOString());
+  const [date] = useState<string>(initialData?.date ?? new Date().toISOString());
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showRecurrenceModal, setShowRecurrenceModal] = useState(false);
 
-  const filteredCategories = categories.filter((c) => c.type === type);
-  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const groupedCategories = useMemo(() => groupCategoriesByParent(categories, type), [categories, type]);
+  const availableSubcategoryIds = useMemo(
+    () => new Set(groupedCategories.flatMap((group) => group.subcategories.map((subcategory) => subcategory.id))),
+    [groupedCategories],
+  );
+  const selectedCategory = categories.find((category) => category.id === categoryId);
+  const selectedParentCategory = getParentCategory(selectedCategory, categories);
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -68,24 +72,33 @@ export function TransactionForm({ initialData, onSubmit, onCancel }: Transaction
     },
   });
 
-  const handleTypeChange = (val: string) => {
-    setType(val as TransactionType);
-    setCategoryId('');
+  useEffect(() => {
+    if (categoryId && !availableSubcategoryIds.has(categoryId)) {
+      setCategoryId('');
+    }
+  }, [categoryId, availableSubcategoryIds]);
+
+  const handleTypeChange = (value: string) => {
+    setType(value as TransactionType);
   };
 
   const onFormSubmit = (data: FormData) => {
     if (!categoryId) {
-      Alert.alert('Atenção', 'Seleciona uma categoria');
+      Alert.alert('Atenção', 'Seleciona uma subcategoria');
       return;
     }
-    if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+
     onSubmit({
-      title: data.title,
+      title: data.title?.trim() || undefined,
       amount: parseFloat(data.amount.replace(',', '.')),
       type,
       categoryId,
       date,
-      description: data.description,
+      description: data.description?.trim() || undefined,
       recurrence,
     });
   };
@@ -118,7 +131,7 @@ export function TransactionForm({ initialData, onSubmit, onCancel }: Transaction
             render={({ field: { onChange, value } }) => (
               <FormInput
                 label="Valor"
-                prefix="€"
+                prefix={DEFAULT_CURRENCY_SYMBOL}
                 value={value}
                 onChangeText={onChange}
                 keyboardType="decimal-pad"
@@ -133,10 +146,10 @@ export function TransactionForm({ initialData, onSubmit, onCancel }: Transaction
             name="title"
             render={({ field: { onChange, value } }) => (
               <FormInput
-                label="Título"
+                label="Título (opcional)"
                 value={value}
                 onChangeText={onChange}
-                placeholder="Ex: Supermercado"
+                placeholder="Se vazio, usamos a subcategoria"
                 error={errors.title?.message}
               />
             )}
@@ -158,15 +171,22 @@ export function TransactionForm({ initialData, onSubmit, onCancel }: Transaction
         </View>
 
         <View style={styles.section}>
-          <ThemedText variant="label" style={styles.sectionLabel}>Categoria</ThemedText>
+          <ThemedText variant="label" style={styles.sectionLabel}>Subcategoria</ThemedText>
           <Pressable style={styles.selector} onPress={() => setShowCategoryModal(true)}>
             {selectedCategory ? (
               <View style={styles.selectedCategory}>
                 <CategoryIcon icon={selectedCategory.icon} color={selectedCategory.color} size={32} />
-                <ThemedText variant="body">{selectedCategory.name}</ThemedText>
+                <View>
+                  <ThemedText variant="body">{selectedCategory.name}</ThemedText>
+                  {selectedParentCategory && (
+                    <ThemedText variant="caption" style={{ color: COLORS.text.secondary }}>
+                      {selectedParentCategory.name}
+                    </ThemedText>
+                  )}
+                </View>
               </View>
             ) : (
-              <ThemedText style={{ color: COLORS.text.tertiary }}>Selecionar categoria</ThemedText>
+              <ThemedText style={{ color: COLORS.text.tertiary }}>Selecionar subcategoria</ThemedText>
             )}
             <Feather name="chevron-right" size={18} color={COLORS.text.tertiary} />
           </Pressable>
@@ -181,34 +201,60 @@ export function TransactionForm({ initialData, onSubmit, onCancel }: Transaction
         </View>
       </KeyboardAwareScrollViewCompat>
 
-      {/* Category Modal */}
       <Modal visible={showCategoryModal} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
-            <ThemedText variant="title">Categoria</ThemedText>
+            <ThemedText variant="title">Subcategoria</ThemedText>
             <Pressable onPress={() => setShowCategoryModal(false)}>
               <Feather name="x" size={22} color={COLORS.text.secondary} />
             </Pressable>
           </View>
-          <FlatList
-            data={filteredCategories}
-            keyExtractor={(item) => item.id}
-            numColumns={3}
-            contentContainerStyle={styles.categoryGrid}
-            renderItem={({ item }) => (
-              <Pressable
-                style={[styles.categoryItem, categoryId === item.id && { backgroundColor: item.color + '15', borderColor: item.color }]}
-                onPress={() => { setCategoryId(item.id); setShowCategoryModal(false); }}
-              >
-                <CategoryIcon icon={item.icon} color={item.color} size={40} />
-                <ThemedText variant="caption" style={styles.categoryName} numberOfLines={1}>{item.name}</ThemedText>
-              </Pressable>
+          <ScrollView contentContainerStyle={styles.categoryGroups}>
+            {groupedCategories.length === 0 ? (
+              <View style={styles.emptyModalState}>
+                <ThemedText variant="caption" style={{ color: COLORS.text.secondary }}>
+                  Não existem subcategorias para este tipo.
+                </ThemedText>
+              </View>
+            ) : (
+              groupedCategories.map((group) => (
+                <View key={group.parent.id} style={styles.categoryGroup}>
+                  <View style={styles.groupHeader}>
+                    <CategoryIcon icon={group.parent.icon} color={group.parent.color} size={32} />
+                    <ThemedText variant="subtitle">{group.parent.name}</ThemedText>
+                  </View>
+                  {group.subcategories.map((subcategory) => (
+                    <Pressable
+                      key={subcategory.id}
+                      style={[
+                        styles.subcategoryItem,
+                        categoryId === subcategory.id && {
+                          backgroundColor: subcategory.color + '12',
+                          borderColor: subcategory.color,
+                        },
+                      ]}
+                      onPress={() => {
+                        setCategoryId(subcategory.id);
+                        setShowCategoryModal(false);
+                      }}
+                    >
+                      <CategoryIcon icon={subcategory.icon} color={subcategory.color} size={36} />
+                      <View style={{ flex: 1 }}>
+                        <ThemedText variant="body">{subcategory.name}</ThemedText>
+                        <ThemedText variant="caption" style={{ color: COLORS.text.secondary }}>
+                          {getCategoryDisplayName(subcategory, categories)}
+                        </ThemedText>
+                      </View>
+                      {categoryId === subcategory.id && <Feather name="check" size={18} color={COLORS.primary} />}
+                    </Pressable>
+                  ))}
+                </View>
+              ))
             )}
-          />
+          </ScrollView>
         </View>
       </Modal>
 
-      {/* Recurrence Modal */}
       <Modal visible={showRecurrenceModal} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
@@ -217,14 +263,17 @@ export function TransactionForm({ initialData, onSubmit, onCancel }: Transaction
               <Feather name="x" size={22} color={COLORS.text.secondary} />
             </Pressable>
           </View>
-          {RECURRENCE_OPTIONS.map((opt) => (
+          {RECURRENCE_OPTIONS.map((option) => (
             <Pressable
-              key={opt.value}
-              style={[styles.recurrenceItem, recurrence === opt.value && styles.recurrenceSelected]}
-              onPress={() => { setRecurrence(opt.value); setShowRecurrenceModal(false); }}
+              key={option.value}
+              style={[styles.recurrenceItem, recurrence === option.value && styles.recurrenceSelected]}
+              onPress={() => {
+                setRecurrence(option.value);
+                setShowRecurrenceModal(false);
+              }}
             >
-              <ThemedText variant="body">{opt.label}</ThemedText>
-              {recurrence === opt.value && <Feather name="check" size={18} color={COLORS.primary} />}
+              <ThemedText variant="body">{option.label}</ThemedText>
+              {recurrence === option.value && <Feather name="check" size={18} color={COLORS.primary} />}
             </Pressable>
           ))}
         </View>
@@ -268,18 +317,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  categoryGrid: { padding: 16, gap: 12 },
-  categoryItem: {
-    flex: 1,
-    margin: 4,
+  categoryGroups: { padding: 16, paddingBottom: 40 },
+  categoryGroup: { marginBottom: 20 },
+  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  subcategoryItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
+    gap: 12,
+    padding: 14,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    marginBottom: 10,
   },
-  categoryName: { marginTop: 6, textAlign: 'center' },
+  emptyModalState: { paddingVertical: 32, alignItems: 'center' },
   recurrenceItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',

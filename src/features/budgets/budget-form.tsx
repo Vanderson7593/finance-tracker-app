@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, FlatList, Modal } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, StyleSheet, Pressable, Modal, ScrollView, Alert } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,11 +8,13 @@ import { FormInput } from '../../components/form-input';
 import { CategoryIcon } from '../../components/category-icon';
 import { ThemedText } from '../../components/themed-text';
 import { COLORS } from '../../../constants/colors';
-import { Budget, Category } from '../../types';
+import { Budget } from '../../types';
+import { DEFAULT_CURRENCY_SYMBOL } from '../../constants';
 import { useCategoryStore } from '../../store/use-category-store';
+import { getParentCategory, groupCategoriesByParent } from '../../lib/categories';
 
 const schema = z.object({
-  amount: z.string().min(1).refine((v) => !isNaN(parseFloat(v)) && parseFloat(v) > 0, 'Valor inválido'),
+  amount: z.string().min(1).refine((value) => !isNaN(parseFloat(value)) && parseFloat(value) > 0, 'Valor inválido'),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -22,14 +24,16 @@ interface BudgetFormProps {
   year: number;
   onSubmit: (data: Omit<Budget, 'id' | 'createdAt'>) => void;
   onCancel: () => void;
+  onDelete?: () => void;
 }
 
-export function BudgetForm({ initialData, month, year, onSubmit, onCancel }: BudgetFormProps) {
+export function BudgetForm({ initialData, month, year, onSubmit, onCancel, onDelete }: BudgetFormProps) {
   const categories = useCategoryStore((s) => s.categories);
-  const expenseCategories = categories.filter((c) => c.type === 'expense');
+  const groupedCategories = useMemo(() => groupCategoriesByParent(categories, 'expense'), [categories]);
   const [categoryId, setCategoryId] = useState<string>(initialData?.categoryId ?? '');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const selectedCategory = categories.find((category) => category.id === categoryId);
+  const selectedParentCategory = getParentCategory(selectedCategory, categories);
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -37,7 +41,11 @@ export function BudgetForm({ initialData, month, year, onSubmit, onCancel }: Bud
   });
 
   const onFormSubmit = (data: FormData) => {
-    if (!categoryId) return;
+    if (!categoryId) {
+      Alert.alert('Atenção', 'Seleciona uma subcategoria');
+      return;
+    }
+
     onSubmit({ categoryId, amount: parseFloat(data.amount.replace(',', '.')), month, year });
   };
 
@@ -54,15 +62,22 @@ export function BudgetForm({ initialData, month, year, onSubmit, onCancel }: Bud
       </View>
 
       <View style={styles.form}>
-        <ThemedText variant="label" style={styles.sectionLabel}>Categoria</ThemedText>
+        <ThemedText variant="label" style={styles.sectionLabel}>Subcategoria</ThemedText>
         <Pressable style={styles.selector} onPress={() => setShowCategoryModal(true)}>
           {selectedCategory ? (
             <View style={styles.selectedCategory}>
               <CategoryIcon icon={selectedCategory.icon} color={selectedCategory.color} size={32} />
-              <ThemedText variant="body">{selectedCategory.name}</ThemedText>
+              <View>
+                <ThemedText variant="body">{selectedCategory.name}</ThemedText>
+                {selectedParentCategory && (
+                  <ThemedText variant="caption" style={{ color: COLORS.text.secondary }}>
+                    {selectedParentCategory.name}
+                  </ThemedText>
+                )}
+              </View>
             </View>
           ) : (
-            <ThemedText style={{ color: COLORS.text.tertiary }}>Selecionar categoria</ThemedText>
+            <ThemedText style={{ color: COLORS.text.tertiary }}>Selecionar subcategoria</ThemedText>
           )}
           <Feather name="chevron-right" size={18} color={COLORS.text.tertiary} />
         </Pressable>
@@ -73,7 +88,7 @@ export function BudgetForm({ initialData, month, year, onSubmit, onCancel }: Bud
           render={({ field: { onChange, value } }) => (
             <FormInput
               label="Limite mensal"
-              prefix="€"
+              prefix={DEFAULT_CURRENCY_SYMBOL}
               value={value}
               onChangeText={onChange}
               keyboardType="decimal-pad"
@@ -82,30 +97,61 @@ export function BudgetForm({ initialData, month, year, onSubmit, onCancel }: Bud
             />
           )}
         />
+
+        {initialData?.id && onDelete && (
+          <Pressable
+            style={styles.deleteBtn}
+            onPress={() =>
+              Alert.alert('Eliminar', 'Eliminar este orçamento?', [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Eliminar', style: 'destructive', onPress: onDelete },
+              ])
+            }
+          >
+            <Feather name="trash-2" size={18} color={COLORS.expense} />
+            <ThemedText style={styles.deleteLabel}>Eliminar orçamento</ThemedText>
+          </Pressable>
+        )}
       </View>
 
       <Modal visible={showCategoryModal} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
-            <ThemedText variant="title">Categoria</ThemedText>
+            <ThemedText variant="title">Subcategoria</ThemedText>
             <Pressable onPress={() => setShowCategoryModal(false)}>
               <Feather name="x" size={22} color={COLORS.text.secondary} />
             </Pressable>
           </View>
-          <FlatList
-            data={expenseCategories}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <Pressable
-                style={[styles.categoryRow, categoryId === item.id && { backgroundColor: COLORS.primaryLight + '10' }]}
-                onPress={() => { setCategoryId(item.id); setShowCategoryModal(false); }}
-              >
-                <CategoryIcon icon={item.icon} color={item.color} size={36} />
-                <ThemedText variant="body" style={{ flex: 1, marginLeft: 12 }}>{item.name}</ThemedText>
-                {categoryId === item.id && <Feather name="check" size={18} color={COLORS.primary} />}
-              </Pressable>
-            )}
-          />
+          <ScrollView contentContainerStyle={styles.categoryGroups}>
+            {groupedCategories.map((group) => (
+              <View key={group.parent.id} style={styles.categoryGroup}>
+                <View style={styles.groupHeader}>
+                  <CategoryIcon icon={group.parent.icon} color={group.parent.color} size={32} />
+                  <ThemedText variant="subtitle">{group.parent.name}</ThemedText>
+                </View>
+                {group.subcategories.map((subcategory) => (
+                  <Pressable
+                    key={subcategory.id}
+                    style={[
+                      styles.subcategoryItem,
+                      categoryId === subcategory.id && {
+                        backgroundColor: subcategory.color + '12',
+                        borderColor: subcategory.color,
+                      },
+                    ]}
+                    onPress={() => {
+                      setCategoryId(subcategory.id);
+                      setShowCategoryModal(false);
+                    }}
+                  >
+                    <CategoryIcon icon={subcategory.icon} color={subcategory.color} size={36} />
+                    <ThemedText variant="body" style={{ flex: 1 }}>{subcategory.name}</ThemedText>
+                    {categoryId === subcategory.id && <Feather name="check" size={18} color={COLORS.primary} />}
+                  </Pressable>
+                ))}
+              </View>
+            ))}
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -146,12 +192,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  categoryRow: {
+  categoryGroups: { padding: 16, paddingBottom: 40 },
+  categoryGroup: { marginBottom: 20 },
+  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  subcategoryItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    gap: 12,
+    padding: 14,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    marginBottom: 10,
   },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.expense + '40',
+    backgroundColor: COLORS.expense + '10',
+  },
+  deleteLabel: { color: COLORS.expense, fontSize: 15, fontWeight: '600' as const },
 });

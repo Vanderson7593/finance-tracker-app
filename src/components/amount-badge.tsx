@@ -4,6 +4,7 @@ import { ThemedText } from './themed-text';
 import { COLORS } from '../../constants/colors';
 import { formatCurrency } from '../lib/formatters';
 import { TransactionType } from '../types';
+import { HIDDEN_AMOUNT, useAmountVisibility } from '../hooks/use-amount-visibility';
 
 interface AmountBadgeProps {
   amount: number;
@@ -16,10 +17,11 @@ export function AmountBadge({ amount, type, size = 'md' }: AmountBadgeProps) {
   const color = isIncome ? COLORS.income : COLORS.expense;
   const prefix = isIncome ? '+' : '-';
   const fontSize = size === 'sm' ? 13 : size === 'lg' ? 20 : 16;
+  const { showAmounts } = useAmountVisibility();
   return (
     <View style={[styles.container, { backgroundColor: isIncome ? COLORS.incomeLight : COLORS.expenseLight }]}>
       <ThemedText style={{ fontSize, fontWeight: '600' as const, color }}>
-        {prefix}{formatCurrency(amount)}
+        {showAmounts ? `${prefix}${formatCurrency(amount)}` : `${prefix}${HIDDEN_AMOUNT}`}
       </ThemedText>
     </View>
   );

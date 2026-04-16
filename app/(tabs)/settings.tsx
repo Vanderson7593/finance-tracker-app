@@ -123,6 +123,14 @@ export default function SettingsScreen() {
         {/* Notifications */}
         <ThemedText variant="label" style={styles.sectionTitle}>Notificações</ThemedText>
         <Card padding={0} style={styles.card}>
+          <SettingRow icon="eye" label="Mostrar valores">
+            <Switch
+              value={settings.showAmounts}
+              onValueChange={(val) => updateSettings({ showAmounts: val })}
+              trackColor={{ false: COLORS.border, true: COLORS.primary }}
+              thumbColor="#FFF"
+            />
+          </SettingRow>
           <SettingRow icon="bell" label="Lembrete diário">
             <Switch
               value={settings.dailyReminder}

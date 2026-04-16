@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, Pressable, StyleSheet, View } from 'react-native';
+import { ScrollView, Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from './themed-text';
 import { COLORS } from '../../constants/colors';
 
@@ -16,7 +16,12 @@ interface PillFilterProps {
 
 export function PillFilter({ options, selected, onSelect }: PillFilterProps) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.container}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.scroll}
+      contentContainerStyle={styles.container}
+    >
       {options.map((opt) => {
         const isSelected = opt.value === selected;
         return (
@@ -34,7 +39,14 @@ export function PillFilter({ options, selected, onSelect }: PillFilterProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, gap: 8, flexDirection: 'row', paddingVertical: 4 },
+  scroll: { flexGrow: 0, flexShrink: 0 },
+  container: {
+    paddingHorizontal: 16,
+    gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
   pill: {
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -42,11 +54,19 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceVariant,
     borderWidth: 1,
     borderColor: COLORS.border,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   selected: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
-  label: { fontSize: 13, fontWeight: '500' as const, color: COLORS.text.secondary },
+  label: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    color: COLORS.text.secondary,
+    lineHeight: 18,
+    includeFontPadding: false,
+  },
   selectedLabel: { color: '#FFF' },
 });

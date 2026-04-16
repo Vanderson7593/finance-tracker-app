@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { ThemedText } from './themed-text';
 import { COLORS } from '../../constants/colors';
+import { DEFAULT_CURRENCY } from '../constants';
 import { formatCurrency } from '../lib/formatters';
+import { HIDDEN_AMOUNT, useAmountVisibility } from '../hooks/use-amount-visibility';
 
 interface SummaryCardProps {
   totalIncome: number;
@@ -14,8 +16,9 @@ interface SummaryCardProps {
   monthLabel: string;
 }
 
-export function SummaryCard({ totalIncome, totalExpenses, balance, currency = 'EUR', monthLabel }: SummaryCardProps) {
+export function SummaryCard({ totalIncome, totalExpenses, balance, currency = DEFAULT_CURRENCY, monthLabel }: SummaryCardProps) {
   const isNegative = balance < 0;
+  const { showAmounts, toggleAmountVisibility } = useAmountVisibility();
   return (
     <LinearGradient
       colors={isNegative ? ['#1E293B', '#334155'] : [COLORS.primaryDark, COLORS.primary]}
@@ -25,12 +28,27 @@ export function SummaryCard({ totalIncome, totalExpenses, balance, currency = 'E
     >
       <View style={styles.header}>
         <ThemedText style={styles.label}>{monthLabel}</ThemedText>
-        <View style={styles.icon}>
-          <Feather name="trending-up" size={16} color="rgba(255,255,255,0.6)" />
+        <View style={styles.headerActions}>
+          <Pressable
+            hitSlop={8}
+            style={styles.eyeButton}
+            onPress={() => {
+              void toggleAmountVisibility();
+            }}
+          >
+            <Feather
+              name={showAmounts ? 'eye' : 'eye-off'}
+              size={16}
+              color="rgba(255,255,255,0.88)"
+            />
+          </Pressable>
+          <View style={styles.icon}>
+            <Feather name="trending-up" size={16} color="rgba(255,255,255,0.6)" />
+          </View>
         </View>
       </View>
       <ThemedText style={styles.balance}>
-        {isNegative ? '-' : ''}{formatCurrency(Math.abs(balance), currency)}
+        {showAmounts ? `${isNegative ? '-' : ''}${formatCurrency(Math.abs(balance), currency)}` : HIDDEN_AMOUNT}
       </ThemedText>
       <ThemedText style={styles.balanceLabel}>Saldo do mês</ThemedText>
       <View style={styles.row}>
@@ -40,7 +58,9 @@ export function SummaryCard({ totalIncome, totalExpenses, balance, currency = 'E
           </View>
           <View>
             <ThemedText style={styles.statLabel}>Receitas</ThemedText>
-            <ThemedText style={styles.statAmount}>{formatCurrency(totalIncome, currency)}</ThemedText>
+            <ThemedText style={styles.statAmount}>
+              {showAmounts ? formatCurrency(totalIncome, currency) : HIDDEN_AMOUNT}
+            </ThemedText>
           </View>
         </View>
         <View style={styles.divider} />
@@ -50,7 +70,9 @@ export function SummaryCard({ totalIncome, totalExpenses, balance, currency = 'E
           </View>
           <View>
             <ThemedText style={styles.statLabel}>Despesas</ThemedText>
-            <ThemedText style={styles.statAmount}>{formatCurrency(totalExpenses, currency)}</ThemedText>
+            <ThemedText style={styles.statAmount}>
+              {showAmounts ? formatCurrency(totalExpenses, currency) : HIDDEN_AMOUNT}
+            </ThemedText>
           </View>
         </View>
       </View>
@@ -65,7 +87,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   label: { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: '500' as const },
+  eyeButton: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: 6 },
   icon: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: 6 },
   balance: { fontSize: 38, fontWeight: '700' as const, color: '#FFF', letterSpacing: -1, marginBottom: 4 },
   balanceLabel: { fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 24 },

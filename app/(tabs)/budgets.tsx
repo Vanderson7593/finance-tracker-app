@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, FlatList, Pressable, Modal, Alert, Platform } from 'react-native';
+import { View, StyleSheet, FlatList, Pressable, Modal, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { BudgetProgressBar } from '../../src/components/budget-progress-bar';
 import { BudgetForm } from '../../src/features/budgets/budget-form';
+import { BudgetCopyModal } from '../../src/features/budgets/budget-copy-modal';
 import { MonthSelector } from '../../src/components/month-selector';
 import { ThemedText } from '../../src/components/themed-text';
 import { EmptyState } from '../../src/components/empty-state';
@@ -23,10 +25,15 @@ export default function BudgetsScreen() {
   const [month, setMonth] = useState(getCurrentMonth().month);
   const [year, setYear] = useState(getCurrentMonth().year);
   const [showForm, setShowForm] = useState(false);
+  const [showCopy, setShowCopy] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
 
-  const { addBudget, updateBudget, deleteBudget } = useBudgetStore();
+  const { addBudget, updateBudget, deleteBudget, budgets } = useBudgetStore();
   const budgetProgress = useBudgetProgress(month, year);
+
+  const hasPreviousMonthData = budgets.some(
+    (b) => b.year < year || (b.year === year && b.month < month),
+  );
 
   const goToPrevMonth = () => {
     if (month === 1) { setMonth(12); setYear((y) => y - 1); }
@@ -47,53 +54,70 @@ export default function BudgetsScreen() {
     setEditingBudget(undefined);
   };
 
-  const handleDelete = (id: string) => {
-    Alert.alert('Eliminar', 'Eliminar este orçamento?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar', style: 'destructive',
-        onPress: async () => {
-          if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          await deleteBudget(id);
-        },
-      },
-    ]);
+  const handleDeleteFromForm = async () => {
+    if (!editingBudget) return;
+    await deleteBudget(editingBudget.id);
+    setShowForm(false);
+    setEditingBudget(undefined);
   };
+
+  const swipe = Gesture.Pan()
+    .activeOffsetX([-20, 20])
+    .failOffsetY([-16, 16])
+    .onEnd((e) => {
+      if (e.translationX < -60) runOnJS(goToNextMonth)();
+      else if (e.translationX > 60) runOnJS(goToPrevMonth)();
+    });
 
   return (
     <View style={[styles.container, { paddingTop: topPad }]}>
       <View style={styles.header}>
         <ThemedText variant="title">Orçamentos</ThemedText>
-        <Pressable style={styles.addBtn} onPress={() => { setEditingBudget(undefined); setShowForm(true); }}>
-          <Feather name="plus" size={22} color="#FFF" />
-        </Pressable>
+        <View style={styles.headerActions}>
+          {hasPreviousMonthData && (
+            <Pressable style={styles.iconBtn} onPress={() => setShowCopy(true)} hitSlop={8}>
+              <Feather name="copy" size={18} color={COLORS.text.secondary} />
+            </Pressable>
+          )}
+          <Pressable style={styles.addBtn} onPress={() => { setEditingBudget(undefined); setShowForm(true); }}>
+            <Feather name="plus" size={22} color="#FFF" />
+          </Pressable>
+        </View>
       </View>
 
       <MonthSelector month={month} year={year} onPrev={goToPrevMonth} onNext={goToNextMonth} />
       <View style={{ height: 8 }} />
 
-      <FlatList
-        data={budgetProgress}
-        keyExtractor={(item) => item.budget.id}
-        contentContainerStyle={[styles.list, isWeb && { paddingBottom: 34 }]}
-        ListEmptyComponent={
-          <EmptyState icon="target" title="Sem orçamentos" subtitle="Define limites de gastos por categoria" />
-        }
-        renderItem={({ item }) => (
-          <View>
-            <BudgetProgressBar
-              progress={item}
-              onPress={() => { setEditingBudget(item.budget); setShowForm(true); }}
-            />
-            <Pressable
-              style={styles.deleteBtn}
-              onPress={() => handleDelete(item.budget.id)}
-            >
-              <Feather name="trash-2" size={14} color={COLORS.expense} />
-            </Pressable>
-          </View>
-        )}
-      />
+      <GestureDetector gesture={swipe}>
+        <View style={styles.listWrapper}>
+          <FlatList
+            data={budgetProgress}
+            keyExtractor={(item) => item.budget.id}
+            contentContainerStyle={[styles.list, isWeb && { paddingBottom: 34 }]}
+            ListEmptyComponent={
+              <View style={styles.emptyWrapper}>
+                <EmptyState
+                  icon="target"
+                  title="Sem orçamentos"
+                  subtitle="Define limites de gastos por categoria"
+                />
+                {hasPreviousMonthData && (
+                  <Pressable style={styles.copyEmptyBtn} onPress={() => setShowCopy(true)}>
+                    <Feather name="copy" size={16} color={COLORS.primary} />
+                    <ThemedText style={styles.copyEmptyLabel}>Copiar do mês anterior</ThemedText>
+                  </Pressable>
+                )}
+              </View>
+            }
+            renderItem={({ item }) => (
+              <BudgetProgressBar
+                progress={item}
+                onPress={() => { setEditingBudget(item.budget); setShowForm(true); }}
+              />
+            )}
+          />
+        </View>
+      </GestureDetector>
 
       <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet">
         <BudgetForm
@@ -102,6 +126,16 @@ export default function BudgetsScreen() {
           year={year}
           onSubmit={handleAddBudget}
           onCancel={() => { setShowForm(false); setEditingBudget(undefined); }}
+          onDelete={editingBudget ? handleDeleteFromForm : undefined}
+        />
+      </Modal>
+
+      <Modal visible={showCopy} animationType="slide" presentationStyle="pageSheet">
+        <BudgetCopyModal
+          targetMonth={month}
+          targetYear={year}
+          onClose={() => setShowCopy(false)}
+          onCopied={() => setShowCopy(false)}
         />
       </Modal>
     </View>
@@ -117,6 +151,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 8,
   },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surfaceVariant,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   addBtn: {
     width: 44,
     height: 44,
@@ -125,6 +170,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  listWrapper: { flex: 1 },
   list: { paddingHorizontal: 16, paddingBottom: 100 },
-  deleteBtn: { position: 'absolute', top: 12, right: 12, padding: 4 },
+  emptyWrapper: { gap: 16, alignItems: 'center' },
+  copyEmptyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: COLORS.primary + '14',
+    borderWidth: 1,
+    borderColor: COLORS.primary + '40',
+  },
+  copyEmptyLabel: { color: COLORS.primary, fontWeight: '600' as const, fontSize: 14 },
 });
