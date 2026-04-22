@@ -3,29 +3,31 @@ import { Tabs } from 'expo-router';
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
 import { Feather } from '@expo/vector-icons';
-import React from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '@/constants/colors';
+import { Palette } from '@/constants/colors';
+import { useColors } from '@/src/hooks/use-colors';
 
 type TabConfig = {
   name: string;
-  label: string;
   icon: keyof typeof Feather.glyphMap;
   sfSymbol: { default: string; selected: string };
 };
 
 const TAB_CONFIG: TabConfig[] = [
-  { name: 'index', label: 'Início', icon: 'home', sfSymbol: { default: 'house', selected: 'house.fill' } },
-  { name: 'transactions', label: 'Transações', icon: 'list', sfSymbol: { default: 'list.bullet', selected: 'list.bullet' } },
-  { name: 'reports', label: 'Relatórios', icon: 'bar-chart-2', sfSymbol: { default: 'chart.bar', selected: 'chart.bar.fill' } },
-  { name: 'budgets', label: 'Orçamento', icon: 'target', sfSymbol: { default: 'target', selected: 'target' } },
-  { name: 'settings', label: 'Definições', icon: 'settings', sfSymbol: { default: 'gearshape', selected: 'gearshape.fill' } },
+  { name: 'index', icon: 'home', sfSymbol: { default: 'house', selected: 'house.fill' } },
+  { name: 'transactions', icon: 'list', sfSymbol: { default: 'list.bullet', selected: 'list.bullet' } },
+  { name: 'reports', icon: 'bar-chart-2', sfSymbol: { default: 'chart.bar', selected: 'chart.bar.fill' } },
+  { name: 'budgets', icon: 'target', sfSymbol: { default: 'target', selected: 'target' } },
+  { name: 'settings', icon: 'settings', sfSymbol: { default: 'gearshape', selected: 'gearshape.fill' } },
 ];
 
 function CustomTabBar({ state, navigation }: any) {
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === 'ios';
+  const COLORS = useColors();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   return (
     <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 8) }]}>
@@ -59,7 +61,6 @@ function CustomTabBar({ state, navigation }: any) {
                   />
                 )}
               </View>
-              <Text style={[styles.label, isFocused && styles.labelActive]}>{tab.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -68,7 +69,7 @@ function CustomTabBar({ state, navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: Palette) => StyleSheet.create({
   wrapper: {
     position: 'absolute',
     bottom: 0,
@@ -94,53 +95,43 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
     paddingVertical: 4,
   },
   iconWrap: {
-    width: 42,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconWrapActive: {
     backgroundColor: COLORS.primary,
   },
-  label: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: COLORS.text.tertiary,
-    letterSpacing: 0.2,
-  },
-  labelActive: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
 });
 
 function NativeTabLayout() {
   return (
-    <NativeTabs>
+    <NativeTabs labelVisibilityMode="unlabeled">
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: 'house', selected: 'house.fill' }} />
-        <Label>Início</Label>
+        <Label hidden>Início</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="transactions">
         <Icon sf={{ default: 'list.bullet', selected: 'list.bullet' }} />
-        <Label>Transações</Label>
+        <Label hidden>Transações</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="reports">
         <Icon sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }} />
-        <Label>Relatórios</Label>
+        <Label hidden>Relatórios</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="budgets">
         <Icon sf={{ default: 'target', selected: 'target' }} />
-        <Label>Orçamento</Label>
+        <Label hidden>Orçamento</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <Icon sf={{ default: 'gearshape', selected: 'gearshape.fill' }} />
-        <Label>Definições</Label>
+        <Label hidden>Definições</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

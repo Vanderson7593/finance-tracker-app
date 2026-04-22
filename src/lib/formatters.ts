@@ -61,3 +61,27 @@ export function getCurrentMonth() {
 export function toISODateString(date: Date): string {
   return date.toISOString();
 }
+
+export function formatAmountInput(input: string): string {
+  if (!input) return '';
+  const cleaned = input.replace(/[^\d,]/g, '');
+  const firstComma = cleaned.indexOf(',');
+  let intPart: string;
+  let decPart: string | undefined;
+  if (firstComma === -1) {
+    intPart = cleaned;
+  } else {
+    intPart = cleaned.slice(0, firstComma);
+    decPart = cleaned.slice(firstComma + 1).replace(/,/g, '').slice(0, 2);
+  }
+  if (decPart !== undefined && intPart === '') intPart = '0';
+  const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return decPart !== undefined ? `${formattedInt},${decPart}` : formattedInt;
+}
+
+export function parseAmountInput(formatted: string): number {
+  if (!formatted) return 0;
+  const normalized = formatted.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(normalized);
+  return isNaN(n) ? 0 : n;
+}

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, TextInput, StyleSheet, TextInputProps } from 'react-native';
 import { ThemedText } from './themed-text';
-import { COLORS } from '../../constants/colors';
+import { Palette } from '../../constants/colors';
+import { useColors } from '../hooks/use-colors';
 
 interface FormInputProps extends TextInputProps {
   label: string;
@@ -10,6 +11,8 @@ interface FormInputProps extends TextInputProps {
 }
 
 export function FormInput({ label, error, prefix, style, ...props }: FormInputProps) {
+  const COLORS = useColors();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   return (
     <View style={styles.wrapper}>
       <ThemedText variant="label" style={styles.label}>{label}</ThemedText>
@@ -26,7 +29,7 @@ export function FormInput({ label, error, prefix, style, ...props }: FormInputPr
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: Palette) => StyleSheet.create({
   wrapper: { marginBottom: 16 },
   label: { marginBottom: 6, fontSize: 13, fontWeight: '500' as const, color: COLORS.text.secondary },
   inputContainer: {

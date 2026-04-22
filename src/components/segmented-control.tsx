@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { ThemedText } from './themed-text';
-import { COLORS } from '../../constants/colors';
+import { Palette } from '../../constants/colors';
+import { useColors } from '../hooks/use-colors';
 
 interface SegmentOption {
   label: string;
@@ -15,6 +16,8 @@ interface SegmentedControlProps {
 }
 
 export function SegmentedControl({ options, selected, onSelect }: SegmentedControlProps) {
+  const COLORS = useColors();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   return (
     <View style={styles.container}>
       {options.map((opt) => {
@@ -33,7 +36,7 @@ export function SegmentedControl({ options, selected, onSelect }: SegmentedContr
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: Palette) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: COLORS.surfaceVariant,

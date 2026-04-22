@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { NotificationSettings, UserProfile } from '../types';
+import { NotificationSettings, ThemePreference, UserProfile } from '../types';
 import { getItem, setItem } from '../lib/storage';
 import { DEFAULT_CURRENCY, STORAGE_KEYS } from '../constants';
 
@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   budgetAlertThreshold: 80,
   weeklyReport: false,
   showAmounts: true,
+  theme: 'system',
 };
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -26,6 +27,7 @@ interface SettingsStore {
   updateSettings: (data: Partial<NotificationSettings>) => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   toggleAmountVisibility: () => Promise<void>;
+  setTheme: (theme: ThemePreference) => Promise<void>;
 }
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -62,5 +64,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const next = { ...get().profile, ...data };
     set({ profile: next });
     await setItem(STORAGE_KEYS.PROFILE, next);
+  },
+
+  setTheme: async (theme) => {
+    const next = { ...get().settings, theme };
+    set({ settings: next });
+    await setItem(STORAGE_KEYS.SETTINGS, next);
   },
 }));

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemedText } from './themed-text';
-import { COLORS } from '../../constants/colors';
+import { useColors } from '../hooks/use-colors';
 import { formatMonth } from '../lib/formatters';
 
 interface MonthSelectorProps {
@@ -13,6 +13,7 @@ interface MonthSelectorProps {
 }
 
 export function MonthSelector({ month, year, onPrev, onNext }: MonthSelectorProps) {
+  const COLORS = useColors();
   const now = new Date();
   const isCurrentOrFuture = year > now.getFullYear() || (year === now.getFullYear() && month >= now.getMonth() + 1);
   return (

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemedText } from './themed-text';
 import { Card } from './card';
-import { COLORS } from '../../constants/colors';
+import { Palette } from '../../constants/colors';
+import { useColors } from '../hooks/use-colors';
 
 interface InsightCardProps {
   icon: string;
@@ -15,6 +16,8 @@ interface InsightCardProps {
 }
 
 export function InsightCard({ icon, iconColor, title, value, subtitle, trend }: InsightCardProps) {
+  const COLORS = useColors();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const trendIcon = trend === 'up' ? 'trending-up' : trend === 'down' ? 'trending-down' : 'minus';
   const trendColor = trend === 'up' ? COLORS.income : trend === 'down' ? COLORS.expense : COLORS.text.tertiary;
   return (
@@ -34,7 +37,7 @@ export function InsightCard({ icon, iconColor, title, value, subtitle, trend }: 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: Palette) => StyleSheet.create({
   card: { flex: 1 },
   iconBg: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   title: { marginBottom: 4 },

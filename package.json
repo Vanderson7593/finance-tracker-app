@@ -1,5 +1,5 @@
 {
-  "name": "finance-tracker",
+  "name": "kumbu-plus",
   "version": "1.0.0",
   "private": true,
   "main": "expo-router/entry",
@@ -61,6 +61,8 @@
     "@hookform/resolvers": "^3.10.0",
     "date-fns": "^3.6.0",
     "expo-crypto": "^15.0.8",
+    "expo-document-picker": "~14.0.8",
+    "expo-file-system": "~19.0.21",
     "expo-notifications": "^0.28.19",
     "react-hook-form": "^7.71.2",
     "react-native-chart-kit": "^6.12.0",

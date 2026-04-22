@@ -2,17 +2,43 @@ export type TransactionType = 'income' | 'expense';
 
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
-export type CategoryKind = 'category' | 'subcategory';
-
 export interface Category {
   id: string;
   name: string;
   icon: string;
   color: string;
   type: TransactionType;
-  kind: CategoryKind;
-  parentCategoryId?: string;
   isDefault?: boolean;
+}
+
+export type AccountType = 'cash' | 'bank' | 'card' | 'wallet' | 'savings';
+
+export interface Account {
+  id: string;
+  name: string;
+  type: AccountType;
+  icon: string;
+  color: string;
+  initialBalance: number;
+  createdAt: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
+
+export type AttachmentKind = 'image' | 'document';
+
+export interface Attachment {
+  id: string;
+  uri: string;
+  name: string;
+  kind: AttachmentKind;
+  mimeType?: string;
+  size?: number;
 }
 
 export interface Transaction {
@@ -21,9 +47,12 @@ export interface Transaction {
   amount: number;
   type: TransactionType;
   categoryId: string;
+  accountId: string;
+  tagIds?: string[];
   date: string; // ISO string
   description?: string;
   recurrence: RecurrenceType;
+  attachments?: Attachment[];
   createdAt: string;
 }
 
@@ -36,6 +65,8 @@ export interface Budget {
   createdAt: string;
 }
 
+export type ThemePreference = 'light' | 'dark' | 'system';
+
 export interface NotificationSettings {
   dailyReminder: boolean;
   dailyReminderTime: string; // HH:mm
@@ -43,6 +74,7 @@ export interface NotificationSettings {
   budgetAlertThreshold: number; // percentage 0-100
   weeklyReport: boolean;
   showAmounts: boolean;
+  theme: ThemePreference;
 }
 
 export interface UserProfile {

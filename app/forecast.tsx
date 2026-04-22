@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Platform, Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,24 +7,26 @@ import { Pressable } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { ThemedText } from '../src/components/themed-text';
 import { Card } from '../src/components/card';
-import { COLORS } from '../constants/colors';
+import { Palette } from '../constants/colors';
+import { useColors } from '../src/hooks/use-colors';
 import { HIDDEN_AMOUNT, useAmountVisibility } from '../src/hooks/use-amount-visibility';
 import { useForecast, useMonthlyTrend, useMonthSummary } from '../src/hooks/use-finance-data';
 import { formatCurrency, formatShortMonth, getCurrentMonth } from '../src/lib/formatters';
 
 const screenWidth = Dimensions.get('window').width;
 
-const CHART_CONFIG = {
-  backgroundColor: COLORS.surface,
-  backgroundGradientFrom: COLORS.surface,
-  backgroundGradientTo: COLORS.surface,
-  decimalPlaces: 0,
-  color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-  labelColor: () => COLORS.text.secondary,
-  propsForDots: { r: '4', strokeWidth: '2', stroke: COLORS.primary },
-};
-
 export default function ForecastScreen() {
+  const COLORS = useColors();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const CHART_CONFIG = useMemo(() => ({
+    backgroundColor: COLORS.surface,
+    backgroundGradientFrom: COLORS.surface,
+    backgroundGradientTo: COLORS.surface,
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+    labelColor: () => COLORS.text.secondary,
+    propsForDots: { r: '4', strokeWidth: '2', stroke: COLORS.primary },
+  }), [COLORS]);
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
   const topPad = isWeb ? 67 : insets.top;
@@ -163,7 +165,7 @@ export default function ForecastScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',

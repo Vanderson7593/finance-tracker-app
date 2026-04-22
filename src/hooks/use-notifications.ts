@@ -38,7 +38,7 @@ export async function scheduleDailyReminder(time: string): Promise<void> {
   const [hour, minute] = time.split(':').map(Number);
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'FinTrack',
+      title: 'Kumbu+',
       body: 'Não te esqueças de registar as tuas finanças hoje!',
     },
     trigger: {
@@ -53,7 +53,7 @@ export async function cancelDailyReminder(): Promise<void> {
   if (!Notifications || Platform.OS === 'web') return;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const notif of scheduled) {
-    if (notif.content.title === 'FinTrack') {
+    if (notif.content.title === 'Kumbu+') {
       await Notifications.cancelScheduledNotificationAsync(notif.identifier);
     }
   }

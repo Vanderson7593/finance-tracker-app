@@ -1,6 +1,6 @@
-# FinTrack
+# Kumbu+
 
-FinTrack is a local-first personal finance tracker built with Expo, React Native, and Expo Router. It runs as a mobile app, works in Expo Go during development, and includes a static preview pipeline for sharing a built version without adding a backend.
+Kumbu+ is a local-first personal finance tracker built with Expo, React Native, and Expo Router. It runs as a mobile app, works in Expo Go during development, and includes a static preview pipeline for sharing a built version without adding a backend.
 
 The current app focuses on the core personal finance loop:
 
@@ -176,11 +176,11 @@ The app is local-first today.
 
 Storage keys currently include:
 
-- `@fintrack_transactions`
-- `@fintrack_categories`
-- `@fintrack_budgets`
-- `@fintrack_settings`
-- `@fintrack_profile`
+- `@kumbu_transactions`
+- `@kumbu_categories`
+- `@kumbu_budgets`
+- `@kumbu_settings`
+- `@kumbu_profile`
 
 If you want a clean state during development, uninstall the app from the simulator/device or clear the relevant AsyncStorage keys.
 

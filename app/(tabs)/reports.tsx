@@ -1,33 +1,34 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, ScrollView, Platform, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { ThemedText } from '../../src/components/themed-text';
-import { MonthSelector } from '../../src/components/month-selector';
+import { MonthStrip } from '../../src/components/month-strip';
 import { InsightCard } from '../../src/components/insight-card';
 import { CategoryIcon } from '../../src/components/category-icon';
 import { Card } from '../../src/components/card';
-import { COLORS } from '../../constants/colors';
+import { SummaryCard } from '../../src/components/summary-card';
+import { Palette } from '../../constants/colors';
+import { useColors } from '../../src/hooks/use-colors';
 import { HIDDEN_AMOUNT, useAmountVisibility } from '../../src/hooks/use-amount-visibility';
 import { useCategorySpending, useMonthSummary, useMonthlyTrend } from '../../src/hooks/use-finance-data';
-import { useCategoryStore } from '../../src/store/use-category-store';
-import { getCategoryDisplayName } from '../../src/lib/categories';
-import { formatCurrency, formatShortMonth, getCurrentMonth } from '../../src/lib/formatters';
+import { formatCurrency, formatMonth, formatShortMonth, getCurrentMonth } from '../../src/lib/formatters';
 
 const screenWidth = Dimensions.get('window').width;
 
-const CHART_CONFIG = {
-  backgroundColor: COLORS.surface,
-  backgroundGradientFrom: COLORS.surface,
-  backgroundGradientTo: COLORS.surface,
-  decimalPlaces: 0,
-  color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-  labelColor: () => COLORS.text.secondary,
-  style: { borderRadius: 12 },
-  propsForDots: { r: '4', strokeWidth: '2', stroke: COLORS.primary },
-};
-
 export default function ReportsScreen() {
+  const COLORS = useColors();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const CHART_CONFIG = useMemo(() => ({
+    backgroundColor: COLORS.surface,
+    backgroundGradientFrom: COLORS.surface,
+    backgroundGradientTo: COLORS.surface,
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+    labelColor: () => COLORS.text.secondary,
+    style: { borderRadius: 12 },
+    propsForDots: { r: '4', strokeWidth: '2', stroke: COLORS.primary },
+  }), [COLORS]);
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
   const topPad = isWeb ? 67 : insets.top;
@@ -38,17 +39,7 @@ export default function ReportsScreen() {
   const summary = useMonthSummary(month, year);
   const categorySpending = useCategorySpending(month, year);
   const monthlyTrend = useMonthlyTrend(6);
-  const categories = useCategoryStore((state) => state.categories);
   const { showAmounts } = useAmountVisibility();
-
-  const goToPrevMonth = () => {
-    if (month === 1) { setMonth(12); setYear((y) => y - 1); }
-    else setMonth((m) => m - 1);
-  };
-  const goToNextMonth = () => {
-    if (month === 12) { setMonth(1); setYear((y) => y + 1); }
-    else setMonth((m) => m + 1);
-  };
 
   const topCategory = categorySpending[0];
   const prevMonth = monthlyTrend[monthlyTrend.length - 2];
@@ -72,7 +63,7 @@ export default function ReportsScreen() {
   };
 
   const pieData = categorySpending.slice(0, 6).map((cs) => ({
-    name: getCategoryDisplayName(cs.category, categories),
+    name: cs.category.name,
     population: cs.total,
     color: cs.category.color,
     legendFontColor: COLORS.text.secondary,
@@ -86,9 +77,25 @@ export default function ReportsScreen() {
       <View style={styles.header}>
         <ThemedText variant="title">Relatórios</ThemedText>
       </View>
+
+      <MonthStrip
+        month={month}
+        year={year}
+        onChange={(m, y) => {
+          setMonth(m);
+          setYear(y);
+        }}
+      />
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scroll, isWeb && { paddingBottom: 34 }]}>
-        <MonthSelector month={month} year={year} onPrev={goToPrevMonth} onNext={goToNextMonth} />
-        <View style={{ height: 16 }} />
+        <View style={styles.summaryWrap}>
+          <SummaryCard
+            totalIncome={summary.totalIncome}
+            totalExpenses={summary.totalExpenses}
+            balance={summary.balance}
+            monthLabel={formatMonth(month, year)}
+          />
+        </View>
 
         {/* Insights */}
         <View style={styles.insightRow}>
@@ -96,7 +103,7 @@ export default function ReportsScreen() {
             icon="trending-down"
             iconColor={COLORS.expense}
             title="Maior gasto"
-            value={topCategory ? getCategoryDisplayName(topCategory.category, categories) : 'N/A'}
+            value={topCategory ? topCategory.category.name : 'N/A'}
             subtitle={topCategory ? (showAmounts ? formatCurrency(topCategory.total) : HIDDEN_AMOUNT) : undefined}
           />
           <View style={{ width: 12 }} />
@@ -183,7 +190,7 @@ export default function ReportsScreen() {
                 <View key={cs.categoryId} style={styles.categoryRow}>
                   <CategoryIcon icon={cs.category.icon} color={cs.category.color} size={36} />
                   <View style={styles.categoryInfo}>
-                    <ThemedText variant="body">{getCategoryDisplayName(cs.category, categories)}</ThemedText>
+                    <ThemedText variant="body">{cs.category.name}</ThemedText>
                     <View style={styles.barBg}>
                       <View style={[styles.barFill, { width: `${cs.percentage}%` as any, backgroundColor: cs.category.color }]} />
                     </View>
@@ -204,10 +211,11 @@ export default function ReportsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: { paddingHorizontal: 20, paddingBottom: 8 },
   scroll: { paddingHorizontal: 16, paddingBottom: 100 },
+  summaryWrap: { marginHorizontal: -16, marginTop: 4, marginBottom: 16 },
   insightRow: { flexDirection: 'row' },
   section: { marginTop: 24 },
   sectionTitle: { marginBottom: 12 },

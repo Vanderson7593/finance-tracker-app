@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemedText } from './themed-text';
-import { COLORS } from '../../constants/colors';
+import { Palette } from '../../constants/colors';
+import { useColors } from '../hooks/use-colors';
 
 interface EmptyStateProps {
   icon: string;
@@ -11,6 +12,8 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ icon, title, subtitle }: EmptyStateProps) {
+  const COLORS = useColors();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
@@ -22,7 +25,7 @@ export function EmptyState({ icon, title, subtitle }: EmptyStateProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: Palette) => StyleSheet.create({
   container: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, paddingHorizontal: 32 },
   iconContainer: {
     width: 64,

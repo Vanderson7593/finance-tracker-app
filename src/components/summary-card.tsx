@@ -3,7 +3,7 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { ThemedText } from './themed-text';
-import { COLORS } from '../../constants/colors';
+import { useColors } from '../hooks/use-colors';
 import { DEFAULT_CURRENCY } from '../constants';
 import { formatCurrency } from '../lib/formatters';
 import { HIDDEN_AMOUNT, useAmountVisibility } from '../hooks/use-amount-visibility';
@@ -17,6 +17,7 @@ interface SummaryCardProps {
 }
 
 export function SummaryCard({ totalIncome, totalExpenses, balance, currency = DEFAULT_CURRENCY, monthLabel }: SummaryCardProps) {
+  const COLORS = useColors();
   const isNegative = balance < 0;
   const { showAmounts, toggleAmountVisibility } = useAmountVisibility();
   return (
@@ -50,7 +51,7 @@ export function SummaryCard({ totalIncome, totalExpenses, balance, currency = DE
       <ThemedText style={styles.balance}>
         {showAmounts ? `${isNegative ? '-' : ''}${formatCurrency(Math.abs(balance), currency)}` : HIDDEN_AMOUNT}
       </ThemedText>
-      <ThemedText style={styles.balanceLabel}>Saldo do mês</ThemedText>
+      <ThemedText style={styles.balanceLabel}>Saldo total</ThemedText>
       <View style={styles.row}>
         <View style={styles.stat}>
           <View style={styles.statIcon}>

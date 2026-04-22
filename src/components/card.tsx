@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, ViewProps, StyleSheet, Pressable } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { Palette } from '../../constants/colors';
+import { useColors } from '../hooks/use-colors';
 
 interface CardProps extends ViewProps {
   onPress?: () => void;
@@ -8,6 +9,8 @@ interface CardProps extends ViewProps {
 }
 
 export function Card({ children, style, onPress, padding = 16, ...props }: CardProps) {
+  const COLORS = useColors();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   if (onPress) {
     return (
       <Pressable
@@ -26,7 +29,7 @@ export function Card({ children, style, onPress, padding = 16, ...props }: CardP
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: Palette) => StyleSheet.create({
   card: {
     backgroundColor: COLORS.surface,
     borderRadius: 16,

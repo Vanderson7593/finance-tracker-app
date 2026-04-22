@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, Pressable, FlatList, Modal, Alert } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, StyleSheet, Pressable, FlatList, Modal } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,10 +8,10 @@ import { FormInput } from '../../components/form-input';
 import { SegmentedControl } from '../../components/segmented-control';
 import { CategoryIcon } from '../../components/category-icon';
 import { ThemedText } from '../../components/themed-text';
-import { COLORS } from '../../../constants/colors';
-import { Category, CategoryKind, TransactionType } from '../../types';
+import { Palette } from '../../../constants/colors';
+import { useColors } from '../../hooks/use-colors';
+import { Category, TransactionType } from '../../types';
 import { CATEGORY_ICONS, CATEGORY_COLORS } from '../../constants';
-import { useCategoryStore } from '../../store/use-category-store';
 
 const schema = z.object({
   name: z.string().min(1, 'Nome obrigatório').max(30),
@@ -25,71 +25,30 @@ interface CategoryFormProps {
 }
 
 export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormProps) {
-  const categories = useCategoryStore((s) => s.categories);
+  const COLORS = useColors();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const [type, setType] = useState<TransactionType>(initialData?.type ?? 'expense');
-  const [kind, setKind] = useState<CategoryKind>(initialData?.kind ?? 'subcategory');
-  const [parentCategoryId, setParentCategoryId] = useState(initialData?.parentCategoryId ?? '');
   const [icon, setIcon] = useState<string>(initialData?.icon ?? 'tag');
   const [color, setColor] = useState<string>(initialData?.color ?? CATEGORY_COLORS[0]!);
-  const [showParentModal, setShowParentModal] = useState(false);
   const [showIconModal, setShowIconModal] = useState(false);
   const [showColorModal, setShowColorModal] = useState(false);
-
-  const parentCategories = useMemo(
-    () =>
-      categories.filter(
-        (category) => category.type === type && category.kind === 'category' && category.id !== initialData?.id,
-      ),
-    [categories, type, initialData?.id],
-  );
-
-  const selectedParentCategory = parentCategories.find((category) => category.id === parentCategoryId);
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { name: initialData?.name ?? '' },
   });
 
-  useEffect(() => {
-    if (kind !== 'subcategory') {
-      setParentCategoryId('');
-      return;
-    }
-
-    if (parentCategories.length === 0) {
-      setParentCategoryId('');
-      return;
-    }
-
-    if (!parentCategories.some((category) => category.id === parentCategoryId)) {
-      setParentCategoryId(parentCategories[0]?.id ?? '');
-    }
-  }, [kind, parentCategories, parentCategoryId]);
-
   const onFormSubmit = (data: FormData) => {
-    if (kind === 'subcategory' && !parentCategoryId) {
-      Alert.alert('Atenção', 'Seleciona uma categoria principal');
-      return;
-    }
-
     onSubmit({
       name: data.name.trim(),
       icon,
       color,
       type,
-      kind,
-      parentCategoryId: kind === 'subcategory' ? parentCategoryId : undefined,
       isDefault: initialData?.isDefault,
     });
   };
 
-  const formTitle = initialData?.id
-    ? initialData.kind === 'category'
-      ? 'Editar categoria'
-      : 'Editar subcategoria'
-    : kind === 'category'
-      ? 'Nova categoria'
-      : 'Nova subcategoria';
+  const formTitle = initialData?.id ? 'Editar categoria' : 'Nova categoria';
 
   return (
     <View style={styles.container}>
@@ -114,12 +73,6 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
           onSelect={(value) => setType(value as TransactionType)}
         />
         <View style={{ height: 16 }} />
-        <SegmentedControl
-          options={[{ label: 'Categoria', value: 'category' }, { label: 'Subcategoria', value: 'subcategory' }]}
-          selected={kind}
-          onSelect={(value) => setKind(value as CategoryKind)}
-        />
-        <View style={{ height: 16 }} />
 
         <Controller
           control={control}
@@ -129,34 +82,11 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
               label="Nome"
               value={value}
               onChangeText={onChange}
-              placeholder={kind === 'category' ? 'Ex: Alimentação' : 'Ex: Supermercado'}
+              placeholder="Ex: Alimentação"
               error={errors.name?.message}
             />
           )}
         />
-
-        {kind === 'subcategory' && (
-          <>
-            <ThemedText variant="label" style={styles.sectionLabel}>Categoria principal</ThemedText>
-            <Pressable style={styles.selector} onPress={() => setShowParentModal(true)}>
-              {selectedParentCategory ? (
-                <View style={styles.selectedCategory}>
-                  <CategoryIcon
-                    icon={selectedParentCategory.icon}
-                    color={selectedParentCategory.color}
-                    size={32}
-                  />
-                  <ThemedText variant="body">{selectedParentCategory.name}</ThemedText>
-                </View>
-              ) : (
-                <ThemedText style={{ color: COLORS.text.tertiary }}>
-                  {parentCategories.length === 0 ? 'Cria primeiro uma categoria principal' : 'Selecionar categoria principal'}
-                </ThemedText>
-              )}
-              <Feather name="chevron-right" size={18} color={COLORS.text.tertiary} />
-            </Pressable>
-          </>
-        )}
 
         <ThemedText variant="label" style={styles.sectionLabel}>Ícone</ThemedText>
         <Pressable style={styles.selector} onPress={() => setShowIconModal(true)}>
@@ -172,41 +102,6 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
           <Feather name="chevron-right" size={18} color={COLORS.text.tertiary} />
         </Pressable>
       </View>
-
-      <Modal visible={showParentModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modal}>
-          <View style={styles.modalHeader}>
-            <ThemedText variant="title">Categoria principal</ThemedText>
-            <Pressable onPress={() => setShowParentModal(false)}>
-              <Feather name="x" size={22} color={COLORS.text.secondary} />
-            </Pressable>
-          </View>
-          <FlatList
-            data={parentCategories}
-            keyExtractor={(item) => item.id}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <ThemedText variant="caption" style={{ color: COLORS.text.secondary }}>
-                  Não existem categorias principais para este tipo.
-                </ThemedText>
-              </View>
-            }
-            renderItem={({ item }) => (
-              <Pressable
-                style={[styles.parentRow, parentCategoryId === item.id && styles.parentRowSelected]}
-                onPress={() => {
-                  setParentCategoryId(item.id);
-                  setShowParentModal(false);
-                }}
-              >
-                <CategoryIcon icon={item.icon} color={item.color} size={36} />
-                <ThemedText variant="body" style={{ flex: 1, marginLeft: 12 }}>{item.name}</ThemedText>
-                {parentCategoryId === item.id && <Feather name="check" size={18} color={COLORS.primary} />}
-              </Pressable>
-            )}
-          />
-        </View>
-      </Modal>
 
       <Modal visible={showIconModal} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modal}>
@@ -267,7 +162,7 @@ export function CategoryForm({ initialData, onSubmit, onCancel }: CategoryFormPr
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
@@ -292,7 +187,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     marginBottom: 12,
   },
-  selectedCategory: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   colorDot: { width: 24, height: 24, borderRadius: 12 },
   modal: { flex: 1, backgroundColor: COLORS.background },
   modalHeader: {
@@ -302,18 +196,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-  },
-  emptyState: { padding: 24, alignItems: 'center' },
-  parentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  parentRowSelected: {
-    backgroundColor: COLORS.primaryLight + '10',
   },
   iconGrid: { padding: 16 },
   iconCell: {

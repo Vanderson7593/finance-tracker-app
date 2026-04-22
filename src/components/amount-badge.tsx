@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ThemedText } from './themed-text';
-import { COLORS } from '../../constants/colors';
+import { useColors } from '../hooks/use-colors';
 import { formatCurrency } from '../lib/formatters';
 import { TransactionType } from '../types';
 import { HIDDEN_AMOUNT, useAmountVisibility } from '../hooks/use-amount-visibility';
@@ -13,6 +13,7 @@ interface AmountBadgeProps {
 }
 
 export function AmountBadge({ amount, type, size = 'md' }: AmountBadgeProps) {
+  const COLORS = useColors();
   const isIncome = type === 'income';
   const color = isIncome ? COLORS.income : COLORS.expense;
   const prefix = isIncome ? '+' : '-';

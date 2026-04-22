@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from './themed-text';
-import { COLORS } from '../../constants/colors';
+import { Palette } from '../../constants/colors';
+import { useColors } from '../hooks/use-colors';
 
 interface PillOption {
   label: string;
@@ -15,6 +16,8 @@ interface PillFilterProps {
 }
 
 export function PillFilter({ options, selected, onSelect }: PillFilterProps) {
+  const COLORS = useColors();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   return (
     <ScrollView
       horizontal
@@ -38,7 +41,7 @@ export function PillFilter({ options, selected, onSelect }: PillFilterProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: Palette) => StyleSheet.create({
   scroll: { flexGrow: 0, flexShrink: 0 },
   container: {
     paddingHorizontal: 16,

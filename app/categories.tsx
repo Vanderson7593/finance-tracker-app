@@ -9,13 +9,15 @@ import { CategoryIcon } from '../src/components/category-icon';
 import { ThemedText } from '../src/components/themed-text';
 import { SegmentedControl } from '../src/components/segmented-control';
 import { EmptyState } from '../src/components/empty-state';
-import { COLORS } from '../constants/colors';
+import { Palette } from '../constants/colors';
+import { useColors } from '../src/hooks/use-colors';
 import { useCategoryStore } from '../src/store/use-category-store';
 import { Category, TransactionType } from '../src/types';
-import { groupCategoriesByParent } from '../src/lib/categories';
 import { generateId } from '../src/lib/uuid';
 
 export default function CategoriesScreen() {
+  const COLORS = useColors();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
   const topPad = isWeb ? 67 : insets.top;
@@ -25,7 +27,10 @@ export default function CategoriesScreen() {
   const [editingCategory, setEditingCategory] = useState<Category | undefined>();
 
   const { categories, addCategory, updateCategory, deleteCategory } = useCategoryStore();
-  const groupedCategories = useMemo(() => groupCategoriesByParent(categories, type), [categories, type]);
+  const filtered = useMemo(
+    () => categories.filter((category) => category.type === type),
+    [categories, type],
+  );
 
   const handleSubmit = async (data: Omit<Category, 'id'>) => {
     if (editingCategory) {
@@ -43,14 +48,9 @@ export default function CategoriesScreen() {
       return;
     }
 
-    if (category.kind === 'category' && categories.some((item) => item.parentCategoryId === category.id)) {
-      Alert.alert('Não permitido', 'Remove ou move as subcategorias antes de eliminar a categoria.');
-      return;
-    }
-
     Alert.alert(
       'Eliminar',
-      `Eliminar ${category.kind === 'category' ? 'a categoria' : 'a subcategoria'} "${category.name}"?`,
+      `Eliminar a categoria "${category.name}"?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -94,88 +94,39 @@ export default function CategoriesScreen() {
       </View>
 
       <FlatList
-        data={groupedCategories}
-        keyExtractor={(item) => item.parent.id}
+        data={filtered}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.list, isWeb && { paddingBottom: 34 }]}
         ListEmptyComponent={
           <EmptyState
             icon="tag"
             title="Sem categorias"
-            subtitle="Cria uma categoria principal e as respetivas subcategorias"
+            subtitle="Cria as tuas categorias"
           />
         }
         renderItem={({ item }) => (
-          <View style={styles.groupCard}>
-            <View style={styles.parentRow}>
-              <View style={styles.parentInfo}>
-                <CategoryIcon icon={item.parent.icon} color={item.parent.color} size={44} />
-                <View style={{ flex: 1 }}>
-                  <ThemedText variant="body" style={{ fontWeight: '700' as const }}>
-                    {item.parent.name}
-                  </ThemedText>
-                  <ThemedText variant="caption">Categoria principal</ThemedText>
-                </View>
-              </View>
-              {item.parent.isDefault ? (
-                <View style={styles.defaultBadge}>
-                  <ThemedText style={{ fontSize: 11, color: COLORS.primary }}>padrão</ThemedText>
-                </View>
-              ) : (
-                <View style={styles.actions}>
-                  <Pressable
-                    hitSlop={8}
-                    onPress={() => {
-                      setEditingCategory(item.parent);
-                      setShowForm(true);
-                    }}
-                  >
-                    <Feather name="edit-2" size={18} color={COLORS.text.secondary} />
-                  </Pressable>
-                  <Pressable hitSlop={8} onPress={() => handleDelete(item.parent)}>
-                    <Feather name="trash-2" size={18} color={COLORS.expense} />
-                  </Pressable>
-                </View>
-              )}
-            </View>
-
-            {item.subcategories.length === 0 ? (
-              <View style={styles.emptySubcategories}>
-                <ThemedText variant="caption" style={{ color: COLORS.text.secondary }}>
-                  Sem subcategorias
-                </ThemedText>
+          <View style={styles.row}>
+            <CategoryIcon icon={item.icon} color={item.color} size={40} />
+            <ThemedText variant="body" style={{ flex: 1 }}>{item.name}</ThemedText>
+            {item.isDefault ? (
+              <View style={styles.defaultBadge}>
+                <ThemedText style={{ fontSize: 11, color: COLORS.primary }}>padrão</ThemedText>
               </View>
             ) : (
-              item.subcategories.map((subcategory) => (
-                <View key={subcategory.id} style={styles.subcategoryRow}>
-                  <View style={styles.subcategoryInfo}>
-                    <CategoryIcon icon={subcategory.icon} color={subcategory.color} size={36} />
-                    <View style={{ flex: 1 }}>
-                      <ThemedText variant="body">{subcategory.name}</ThemedText>
-                      <ThemedText variant="caption">Subcategoria</ThemedText>
-                    </View>
-                  </View>
-                  {subcategory.isDefault ? (
-                    <View style={styles.defaultBadge}>
-                      <ThemedText style={{ fontSize: 11, color: COLORS.primary }}>padrão</ThemedText>
-                    </View>
-                  ) : (
-                    <View style={styles.actions}>
-                      <Pressable
-                        hitSlop={8}
-                        onPress={() => {
-                          setEditingCategory(subcategory);
-                          setShowForm(true);
-                        }}
-                      >
-                        <Feather name="edit-2" size={18} color={COLORS.text.secondary} />
-                      </Pressable>
-                      <Pressable hitSlop={8} onPress={() => handleDelete(subcategory)}>
-                        <Feather name="trash-2" size={18} color={COLORS.expense} />
-                      </Pressable>
-                    </View>
-                  )}
-                </View>
-              ))
+              <View style={styles.actions}>
+                <Pressable
+                  hitSlop={8}
+                  onPress={() => {
+                    setEditingCategory(item);
+                    setShowForm(true);
+                  }}
+                >
+                  <Feather name="edit-2" size={18} color={COLORS.text.secondary} />
+                </Pressable>
+                <Pressable hitSlop={8} onPress={() => handleDelete(item)}>
+                  <Feather name="trash-2" size={18} color={COLORS.expense} />
+                </Pressable>
+              </View>
             )}
           </View>
         )}
@@ -195,7 +146,7 @@ export default function CategoriesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
@@ -213,44 +164,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   segmentWrapper: { paddingHorizontal: 16, marginBottom: 12 },
-  list: { paddingHorizontal: 16, paddingBottom: 100 },
-  groupCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 14,
-  },
-  parentRow: {
+  list: { paddingHorizontal: 16, paddingBottom: 100, gap: 8 },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  parentInfo: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
-  subcategoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    gap: 12,
+    paddingHorizontal: 14,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    marginLeft: 18,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  subcategoryInfo: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
-  emptySubcategories: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  actions: { flexDirection: 'row', gap: 16, marginLeft: 12 },
+  actions: { flexDirection: 'row', gap: 14 },
   defaultBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     backgroundColor: COLORS.primaryMuted,
-    marginLeft: 12,
   },
 });

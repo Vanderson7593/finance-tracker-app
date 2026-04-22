@@ -1,10 +1,33 @@
 export const STORAGE_KEYS = {
-  TRANSACTIONS: '@fintrack_transactions',
-  CATEGORIES: '@fintrack_categories',
-  BUDGETS: '@fintrack_budgets',
-  SETTINGS: '@fintrack_settings',
-  PROFILE: '@fintrack_profile',
+  TRANSACTIONS: '@kumbu_transactions',
+  CATEGORIES: '@kumbu_categories',
+  BUDGETS: '@kumbu_budgets',
+  SETTINGS: '@kumbu_settings',
+  PROFILE: '@kumbu_profile',
+  ACCOUNTS: '@kumbu_accounts',
+  TAGS: '@kumbu_tags',
 } as const;
+
+export const ACCOUNT_TYPE_LABELS = {
+  cash: 'Dinheiro',
+  bank: 'Banco',
+  card: 'Cartão',
+  wallet: 'Carteira',
+  savings: 'Poupança',
+} as const;
+
+export const ACCOUNT_TYPE_ICONS = {
+  cash: 'dollar-sign',
+  bank: 'home',
+  card: 'credit-card',
+  wallet: 'briefcase',
+  savings: 'trending-up',
+} as const;
+
+export const TAG_COLORS = [
+  '#6366F1', '#8B5CF6', '#EC4899', '#F97316', '#EAB308',
+  '#22C55E', '#14B8A6', '#3B82F6', '#06B6D4', '#A855F7',
+];
 
 export const CURRENCY_SYMBOLS = {
   AOA: 'Kz',
