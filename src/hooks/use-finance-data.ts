@@ -3,8 +3,22 @@ import { parseISO, isSameMonth, isSameYear } from 'date-fns';
 import { useTransactionStore } from '../store/use-transaction-store';
 import { useCategoryStore } from '../store/use-category-store';
 import { useBudgetStore } from '../store/use-budget-store';
-import { Transaction, CategorySpending, BudgetProgress, ForecastData, MonthSummary } from '../types';
+import { useAccountStore } from '../store/use-account-store';
+import { Transaction, CategorySpending, BudgetProgress, ForecastData, MonthSummary, Account } from '../types';
 import { BUDGET_WARNING_THRESHOLD } from '../constants';
+
+export function useAllAccountBalances(): Array<Account & { balance: number }> {
+  const transactions = useTransactionStore((s) => s.transactions);
+  const accounts = useAccountStore((s) => s.accounts);
+  return useMemo(() => {
+    return accounts.map((account) => {
+      const txs = transactions.filter((t) => t.accountId === account.id);
+      const income = txs.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const expenses = txs.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      return { ...account, balance: account.initialBalance + income - expenses };
+    });
+  }, [transactions, accounts]);
+}
 
 export function useMonthTransactions(month: number, year: number) {
   const transactions = useTransactionStore((s) => s.transactions);

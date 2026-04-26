@@ -23,13 +23,14 @@ import { generateId } from '../src/lib/uuid';
 import { ACCOUNT_TYPE_ICONS, ACCOUNT_TYPE_LABELS } from '../src/constants';
 import { AccountType } from '../src/types';
 
-const TYPE_OPTIONS: AccountType[] = ['cash', 'bank', 'card', 'wallet', 'savings'];
+const TYPE_OPTIONS: AccountType[] = ['bank', 'wallet', 'digital', 'card', 'savings', 'other'];
 const TYPE_COLORS: Record<AccountType, string> = {
-  cash: '#22C55E',
   bank: '#6366F1',
-  card: '#F97316',
   wallet: '#A855F7',
+  digital: '#06B6D4',
+  card: '#F97316',
   savings: '#14B8A6',
+  other: '#64748B',
 };
 
 export default function OnboardingScreen() {
@@ -39,7 +40,7 @@ export default function OnboardingScreen() {
   const inputRef = useRef<TextInput>(null);
 
   const [name, setName] = useState('Conta');
-  const [type, setType] = useState<AccountType>('cash');
+  const [type, setType] = useState<AccountType>('bank');
   const [submitting, setSubmitting] = useState(false);
 
   const addAccount = useAccountStore((s) => s.addAccount);

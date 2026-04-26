@@ -14,7 +14,8 @@
       "backgroundColor": "#F8F9FC"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.vander-dev.kumbu-plus"
     },
     "android": {
       "adaptiveIcon": {
@@ -40,6 +41,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f66dc750-c044-450c-965b-f46b082e8fcb"
+      }
+    },
+    "owner": "vanderson7593"
   }
 }

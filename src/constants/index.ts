@@ -9,19 +9,21 @@ export const STORAGE_KEYS = {
 } as const;
 
 export const ACCOUNT_TYPE_LABELS = {
-  cash: 'Dinheiro',
-  bank: 'Banco',
-  card: 'Cartão',
+  bank: 'Conta bancária',
   wallet: 'Carteira',
-  savings: 'Poupança',
+  digital: 'Carteira digital',
+  card: 'Cartão de crédito',
+  savings: 'Cofre',
+  other: 'Outro',
 } as const;
 
 export const ACCOUNT_TYPE_ICONS = {
-  cash: 'dollar-sign',
   bank: 'home',
-  card: 'credit-card',
   wallet: 'briefcase',
-  savings: 'trending-up',
+  digital: 'smartphone',
+  card: 'credit-card',
+  savings: 'shield',
+  other: 'more-horizontal',
 } as const;
 
 export const TAG_COLORS = [

@@ -1,6 +1,6 @@
-export type TransactionType = 'income' | 'expense';
+export type TransactionType = "income" | "expense" | "transfer";
 
-export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type RecurrenceType = "none" | "daily" | "weekly" | "monthly" | "yearly";
 
 export interface Category {
   id: string;
@@ -11,7 +11,7 @@ export interface Category {
   isDefault?: boolean;
 }
 
-export type AccountType = 'cash' | 'bank' | 'card' | 'wallet' | 'savings';
+export type AccountType = "bank" | "wallet" | "digital" | "card" | "savings" | "other";
 
 export interface Account {
   id: string;
@@ -30,7 +30,7 @@ export interface Tag {
   createdAt: string;
 }
 
-export type AttachmentKind = 'image' | 'document';
+export type AttachmentKind = "image" | "document";
 
 export interface Attachment {
   id: string;
@@ -54,6 +54,7 @@ export interface Transaction {
   recurrence: RecurrenceType;
   attachments?: Attachment[];
   createdAt: string;
+  transferId?: string; // links paired transfer transactions
 }
 
 export interface Budget {
@@ -65,7 +66,7 @@ export interface Budget {
   createdAt: string;
 }
 
-export type ThemePreference = 'light' | 'dark' | 'system';
+export type ThemePreference = "light" | "dark" | "system";
 
 export interface NotificationSettings {
   dailyReminder: boolean;
@@ -115,5 +116,5 @@ export interface ForecastData {
   projectedExpenses: number;
   daysLeft: number;
   message: string;
-  confidence: 'low' | 'medium' | 'high';
+  confidence: "low" | "medium" | "high";
 }

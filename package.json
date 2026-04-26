@@ -3,13 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "main": "expo-router/entry",
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be",
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "dev": "pnpm exec expo start",
     "build": "node scripts/build.js",
     "serve": "node server/serve.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -66,6 +68,10 @@
     "expo-notifications": "^0.28.19",
     "react-hook-form": "^7.71.2",
     "react-native-chart-kit": "^6.12.0",
-    "zustand": "^5.0.12"
+    "react-native-draggable-flatlist": "^4.0.3",
+    "zustand": "^5.0.12",
+    "expo": "~54.0.33",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   }
 }

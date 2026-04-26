@@ -5,7 +5,7 @@ import { DEFAULT_CURRENCY, STORAGE_KEYS } from '../constants';
 
 const DEFAULT_SETTINGS: NotificationSettings = {
   dailyReminder: false,
-  dailyReminderTime: '20:00',
+  dailyReminderTime: '22:00',
   budgetAlerts: true,
   budgetAlertThreshold: 80,
   weeklyReport: false,

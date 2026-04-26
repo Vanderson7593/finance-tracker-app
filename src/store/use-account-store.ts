@@ -1,8 +1,9 @@
-import { create } from 'zustand';
-import { Account, Transaction } from '../types';
-import { getItem, setItem } from '../lib/storage';
-import { STORAGE_KEYS } from '../constants';
-import { useTransactionStore } from './use-transaction-store';
+import { create } from "zustand";
+import { Account, Transaction } from "../types";
+import { getItem, setItem } from "../lib/storage";
+import { STORAGE_KEYS } from "../constants";
+import { useTransactionStore } from "./use-transaction-store";
+import { generateId } from "../lib/uuid";
 
 interface AccountStore {
   accounts: Account[];
@@ -12,6 +13,7 @@ interface AccountStore {
   updateAccount: (id: string, data: Partial<Account>) => Promise<void>;
   deleteAccount: (id: string) => Promise<void>;
   getAccountById: (id: string) => Account | undefined;
+  transferBetweenAccounts: (fromId: string, toId: string, amount: number) => Promise<void>;
 }
 
 async function backfillTransactionAccounts(firstAccountId: string) {
@@ -19,7 +21,9 @@ async function backfillTransactionAccounts(firstAccountId: string) {
   if (!txs || txs.length === 0) return;
   const needsMigration = txs.some((t) => !t.accountId);
   if (!needsMigration) return;
-  const migrated = txs.map((t) => (t.accountId ? t : { ...t, accountId: firstAccountId }));
+  const migrated = txs.map((t) =>
+    t.accountId ? t : { ...t, accountId: firstAccountId },
+  );
   await setItem(STORAGE_KEYS.TRANSACTIONS, migrated);
   const txStore = useTransactionStore.getState();
   if (txStore.initialized) {
@@ -50,7 +54,9 @@ export const useAccountStore = create<AccountStore>((set, get) => ({
   },
 
   updateAccount: async (id, data) => {
-    const next = get().accounts.map((a) => (a.id === id ? { ...a, ...data } : a));
+    const next = get().accounts.map((a) =>
+      a.id === id ? { ...a, ...data } : a,
+    );
     set({ accounts: next });
     await setItem(STORAGE_KEYS.ACCOUNTS, next);
   },
@@ -70,4 +76,33 @@ export const useAccountStore = create<AccountStore>((set, get) => ({
   },
 
   getAccountById: (id) => get().accounts.find((a) => a.id === id),
+
+  transferBetweenAccounts: async (fromId, toId, amount) => {
+    const now = new Date().toISOString();
+    const transferId = generateId();
+    const expense: Transaction = {
+      id: generateId(),
+      amount,
+      type: "expense",
+      categoryId: "transfer",
+      accountId: fromId,
+      date: now,
+      recurrence: "none",
+      createdAt: now,
+      transferId,
+    };
+    const income: Transaction = {
+      id: generateId(),
+      amount,
+      type: "income",
+      categoryId: "transfer",
+      accountId: toId,
+      date: now,
+      recurrence: "none",
+      createdAt: now,
+      transferId,
+    };
+    await useTransactionStore.getState().addTransaction(expense);
+    await useTransactionStore.getState().addTransaction(income);
+  },
 }));

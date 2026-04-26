@@ -6,7 +6,7 @@ import { ThemedText } from './themed-text';
 import { useColors } from '../hooks/use-colors';
 import { DEFAULT_CURRENCY } from '../constants';
 import { formatCurrency } from '../lib/formatters';
-import { HIDDEN_AMOUNT, useAmountVisibility } from '../hooks/use-amount-visibility';
+import { hiddenCurrency, useAmountVisibility } from '../hooks/use-amount-visibility';
 
 interface SummaryCardProps {
   totalIncome: number;
@@ -49,7 +49,7 @@ export function SummaryCard({ totalIncome, totalExpenses, balance, currency = DE
         </View>
       </View>
       <ThemedText style={styles.balance}>
-        {showAmounts ? `${isNegative ? '-' : ''}${formatCurrency(Math.abs(balance), currency)}` : HIDDEN_AMOUNT}
+        {showAmounts ? `${isNegative ? '-' : ''}${formatCurrency(Math.abs(balance), currency)}` : hiddenCurrency(currency)}
       </ThemedText>
       <ThemedText style={styles.balanceLabel}>Saldo total</ThemedText>
       <View style={styles.row}>
@@ -60,7 +60,7 @@ export function SummaryCard({ totalIncome, totalExpenses, balance, currency = DE
           <View>
             <ThemedText style={styles.statLabel}>Receitas</ThemedText>
             <ThemedText style={styles.statAmount}>
-              {showAmounts ? formatCurrency(totalIncome, currency) : HIDDEN_AMOUNT}
+              {showAmounts ? formatCurrency(totalIncome, currency) : hiddenCurrency(currency)}
             </ThemedText>
           </View>
         </View>
@@ -72,7 +72,7 @@ export function SummaryCard({ totalIncome, totalExpenses, balance, currency = DE
           <View>
             <ThemedText style={styles.statLabel}>Despesas</ThemedText>
             <ThemedText style={styles.statAmount}>
-              {showAmounts ? formatCurrency(totalExpenses, currency) : HIDDEN_AMOUNT}
+              {showAmounts ? formatCurrency(totalExpenses, currency) : hiddenCurrency(currency)}
             </ThemedText>
           </View>
         </View>
