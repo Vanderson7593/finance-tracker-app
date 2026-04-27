@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { Transaction } from '../types';
 import { getItem, setItem } from '../lib/storage';
 import { STORAGE_KEYS } from '../constants';
-import { SEED_TRANSACTIONS } from '../lib/seed';
 
 interface TransactionStore {
   transactions: Transaction[];
@@ -19,12 +18,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
 
   loadTransactions: async () => {
     const stored = await getItem<Transaction[]>(STORAGE_KEYS.TRANSACTIONS);
-    if (stored && stored.length > 0) {
-      set({ transactions: stored, initialized: true });
-    } else {
-      await setItem(STORAGE_KEYS.TRANSACTIONS, SEED_TRANSACTIONS);
-      set({ transactions: SEED_TRANSACTIONS, initialized: true });
-    }
+    set({ transactions: stored ?? [], initialized: true });
   },
 
   addTransaction: async (tx) => {

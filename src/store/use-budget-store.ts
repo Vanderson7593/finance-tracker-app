@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { Budget } from '../types';
 import { getItem, setItem } from '../lib/storage';
 import { STORAGE_KEYS } from '../constants';
-import { getSeedBudgets } from '../lib/seed';
 
 interface BudgetStore {
   budgets: Budget[];
@@ -20,13 +19,7 @@ export const useBudgetStore = create<BudgetStore>((set, get) => ({
 
   loadBudgets: async () => {
     const stored = await getItem<Budget[]>(STORAGE_KEYS.BUDGETS);
-    if (stored && stored.length > 0) {
-      set({ budgets: stored, initialized: true });
-    } else {
-      const seed = getSeedBudgets();
-      await setItem(STORAGE_KEYS.BUDGETS, seed);
-      set({ budgets: seed, initialized: true });
-    }
+    set({ budgets: stored ?? [], initialized: true });
   },
 
   addBudget: async (budget) => {

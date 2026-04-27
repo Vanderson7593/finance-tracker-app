@@ -185,7 +185,7 @@ export default function SettingsScreen() {
         transactions,
       };
       const json = JSON.stringify(payload, null, 2);
-      const filename = `kumbu-export-${new Date().toISOString().slice(0, 10)}.json`;
+      const filename = `kumbu-plus-export-${new Date().toISOString().slice(0, 10)}.json`;
 
       if (Platform.OS === 'web') {
         Alert.alert('Exportar', 'Exportação de ficheiros não suportada no browser.');

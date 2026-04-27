@@ -11,7 +11,8 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F8F9FC"
+      "backgroundColor": "#F8F9FC",
+      "imageWidth": 36
     },
     "ios": {
       "supportsTablet": false,
@@ -21,23 +22,13 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#F8F9FC"
-      }
+      },
+      "package": "com.vanderdev.kumbuplus"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
-    "plugins": [
-      "expo-router",
-      "expo-font",
-      "expo-web-browser",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/icon.png",
-          "color": "#6366F1"
-        }
-      ]
-    ],
+    "plugins": ["expo-router", "expo-font", "expo-web-browser"],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
